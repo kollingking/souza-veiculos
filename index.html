@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+
+    <!-- SEO Meta Tags -->
+    <title>Souza Select Car - Comprar e Vender Carros Usados, Novos e Seminovos</title>
+    <meta name="description"
+        content="Compre, Venda, Compare Valores e Ficha Técnica de carros novos, seminovos e usados. Fique por dentro das novidades no mercado automotivo.">
+    <meta name="keywords"
+        content="carros, veículos, seminovos, carros novos, SUV, sedan, picape, hatch, comprar carro, vender carro">
+    <meta name="author" content="Souza Select Car">
+
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://souzaselectcar.com/">
+    <meta property="og:title" content="Souza Select Car - Veículos de Qualidade">
+    <meta property="og:description"
+        content="Encontre o carro perfeito para você. Novos e seminovos com qualidade garantida.">
+    <meta property="og:image" content="logo.png">
+    <meta property="og:locale" content="pt_BR">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Souza Select Car - Veículos de Qualidade">
+    <meta name="twitter:description"
+        content="Encontre o carro perfeito para você. Novos e seminovos com qualidade garantida.">
+    <meta name="twitter:image" content="logo.png">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="logo.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Facebook Pixel Code -->
+    <script>
+        !function (f, b, e, v, n, t, s) {
+            if (f.fbq) return; n = f.fbq = function () {
+                n.callMethod ?
+                    n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+            };
+            if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+            n.queue = []; t = b.createElement(e); t.async = !0;
+            t.src = v; s = b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t, s)
+        }(window, document, 'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', 'SEU-ID-DO-PIXEL-AQUI');
+        fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+            src="https://www.facebook.com/tr?id=SEU-ID-DO-PIXEL-AQUI&ev=PageView&noscript=1" /></noscript>
+    <!-- SEO & Social Sharing (Open Graph) -->
+    <meta property="og:title" content="Souza Select Car - Veículos Premium">
+    <meta property="og:description"
+        content="Encontre o carro dos seus sonhos. Atendimento exclusivo e estoque selecionado.">
+    <meta property="og:image" content="https://seusite.com.br/logo.png">
+    <meta property="og:url" content="https://seusite.com.br">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <!-- End Meta Pixel Code -->
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header class="header" id="header">
+        <div class="header-container">
+            <div class="logo">
+                <a href="#hero">
+                    <img src="logo.png" alt="Souza Select Car" class="logo-img">
+                </a>
+            </div>
+            <nav class="nav-desktop">
+                <ul>
+                    <li><a href="#hero">Início</a></li>
+                    <li><a href="veiculos.html">Estoque</a></li>
+                    <li><a href="#vender">Vender</a></li>
+                    <li><a href="#sobre-nos">Sobre Nós</a></li>
+                    <li><a href="#contato">Contato</a></li>
+                </ul>
+            </nav>
+            <div class="header-actions">
+
+
+
+                <!-- Theme Toggle Button -->
+                <button class="theme-toggle" id="themeToggle" aria-label="Alternar tema claro/escuro">
+                    <svg class="icon-sun" viewBox="0 0 24 24">
+                        <path
+                            d="M12 18C8.68629 18 6 15.3137 6 12C6 8.68629 8.68629 6 12 6C15.3137 6 18 8.68629 18 12C18 15.3137 15.3137 18 12 18ZM12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16ZM11 1H13V4H11V1ZM11 20H13V23H11V20ZM3.51472 4.92893L4.92893 3.51472L7.05025 5.63604L5.63604 7.05025L3.51472 4.92893ZM16.9497 18.364L18.364 16.9497L20.4853 19.0711L19.0711 20.4853L16.9497 18.364ZM19.0711 3.51472L20.4853 4.92893L18.364 7.05025L16.9497 5.63604L19.0711 3.51472ZM5.63604 16.9497L7.05025 18.364L4.92893 20.4853L3.51472 19.0711L5.63604 16.9497ZM23 11V13H20V11H23ZM4 11V13H1V11H4Z" />
+                    </svg>
+                    <svg class="icon-moon" viewBox="0 0 24 24">
+                        <path
+                            d="M10 7C10 10.866 13.134 14 17 14C18.9584 14 20.729 13.1957 21.9995 11.8995C22 11.933 22 11.9665 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C12.0335 2 12.067 2 12.1005 2.00049C10.8043 3.27098 10 5.04157 10 7ZM4 12C4 16.4183 7.58172 20 12 20C15.0583 20 17.7158 18.2839 19.062 15.7621C18.3945 15.9187 17.7035 16 17 16C12.0294 16 8 11.9706 8 7C8 6.29648 8.08133 5.60547 8.2379 4.938C5.71611 6.28423 4 8.9417 4 12Z" />
+                    </svg>
+                </button>
+
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <nav>
+            <ul>
+                <li><a href="#hero">Início</a></li>
+                <li><a href="veiculos.html">Estoque</a></li>
+                <li><a href="#vender">Vender</a></li>
+                <li><a href="#sobre-nos">Sobre Nós</a></li>
+                <li><a href="#contato">Contato</a></li>
+            </ul>
+        </nav>
+
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+        <div class="hero-banner">
+            <div class="banner-slide active">
+                <img src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1920&q=80"
+                    alt="Carros de luxo">
+                <div class="banner-overlay"></div>
+            </div>
+            <div class="banner-slide">
+                <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1920&q=80"
+                    alt="Concessionária">
+                <div class="banner-overlay"></div>
+            </div>
+            <div class="banner-slide">
+                <img src="https://images.unsplash.com/photo-1555215695-3004980ad54e?w=1920&q=80" alt="Veículos premium">
+                <div class="banner-overlay"></div>
+            </div>
+        </div>
+        <div class="hero-content">
+            <h1 class="hero-title">
+                Encontre o carro dos seus <span>sonhos</span>
+            </h1>
+            <p class="hero-subtitle">Mais de 10.000 veículos disponíveis para você</p>
+        </div>
+    </section>
+
+    <!-- Search Section -->
+    <section class="search-section" id="comprar">
+        <div class="container">
+            <div class="search-tabs">
+                <button class="tab-btn active" data-tab="carros">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 17h14M3 9h18l-1.5-4H4.5L3 9Z" />
+                        <circle cx="7" cy="17" r="2" />
+                        <circle cx="17" cy="17" r="2" />
+                    </svg>
+                    <span>Carros</span>
+                </button>
+                <button class="tab-btn" data-tab="motos">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="5" cy="17" r="3" />
+                        <circle cx="19" cy="17" r="3" />
+                        <path d="M5 17l7-5 7 5" />
+                    </svg>
+                    <span>Motos</span>
+                </button>
+            </div>
+            <div class="search-box">
+                <div class="search-row">
+                    <div class="search-field">
+                        <select id="marca">
+                            <option value="">Marca</option>
+                            <option value="volkswagen">Volkswagen</option>
+                            <option value="chevrolet">Chevrolet</option>
+                            <option value="fiat">Fiat</option>
+                            <option value="ford">Ford</option>
+                            <option value="toyota">Toyota</option>
+                            <option value="honda">Honda</option>
+                            <option value="hyundai">Hyundai</option>
+                            <option value="renault">Renault</option>
+                            <option value="nissan">Nissan</option>
+                            <option value="jeep">Jeep</option>
+                        </select>
+                    </div>
+                    <div class="search-field">
+                        <select id="modelo">
+                            <option value="">Modelo</option>
+                        </select>
+                    </div>
+                    <div class="search-field">
+                        <select id="ano">
+                            <option value="">Ano</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                            <option value="2022">2022</option>
+                            <option value="2021">2021</option>
+                            <option value="2020">2020</option>
+                            <option value="2019">2019</option>
+                            <option value="2018">2018</option>
+                        </select>
+                    </div>
+                    <div class="search-field">
+                        <select id="preco">
+                            <option value="">Preço até</option>
+                            <option value="50000">R$ 50.000</option>
+                            <option value="80000">R$ 80.000</option>
+                            <option value="100000">R$ 100.000</option>
+                            <option value="150000">R$ 150.000</option>
+                            <option value="200000">R$ 200.000</option>
+                            <option value="300000">R$ 300.000</option>
+                        </select>
+                    </div>
+                    <button class="btn-search" id="homeSearchBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.3-4.3"></path>
+                        </svg>
+                        <span>Buscar</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Cars Carousel -->
+    <section class="featured-carousel-section" id="featuredCarousel">
+        <div class="container">
+            <div class="featured-carousel-container">
+                <button class="carousel-btn prev-btn side-btn" aria-label="Anterior">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                </button>
+                <div class="featured-carousel-wrapper">
+                    <div class="featured-carousel" id="featuredCarouselTrack">
+                        <!-- Cars will be loaded dynamically -->
+                    </div>
+                </div>
+                <button class="carousel-btn next-btn side-btn" aria-label="Próximo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6" />
+                    </svg>
+                </button>
+            </div>
+            <div style="text-align: center; margin-top: 24px;">
+                <a href="#nossos-veiculos" class="see-all">Ver todos</a>
+            </div>
+        </div>
+    </section>
+
+
+
+    <section class="brands-section" id="marcas">
+        <div class="container">
+            <h2 class="section-title">Marcas populares</h2>
+            <div class="brands-carousel-container">
+                <button class="carousel-btn brand-prev side-btn" aria-label="Anterior">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                </button>
+                <div class="brands-carousel" style="overflow-x: hidden; position: relative; margin: 0; padding: 20px;">
+                    <div class="brands-track" id="brandsTrack">
+                        <!-- Brands will be loaded dynamically -->
+                    </div>
+                </div>
+                <button class="carousel-btn brand-next side-btn" aria-label="Próximo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Price Range Section -->
+    <section class="price-range-section" id="priceRange">
+        <div class="container">
+            <div class="section-header-v2">
+                <h2 class="section-title">Busque por preços</h2>
+                <p class="section-subtitle">Encontre ofertas na sua faixa de preço</p>
+            </div>
+            <div class="price-range-grid" id="priceRangeGrid">
+                <!-- Price range cards will be loaded dynamically -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Categories Section -->
+    <section class="categories-section">
+        <div class="container">
+            <h2 class="section-title">Busque por categoria</h2>
+            <div class="categories-grid">
+                <a href="#" class="category-card" data-category="sedan">
+                    <div class="category-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <rect x="3" y="8" width="18" height="12" rx="2" />
+                            <path d="M7 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2" />
+                        </svg>
+                    </div>
+                    <span>Sedan</span>
+                </a>
+                <a href="#" class="category-card" data-category="hatch">
+                    <div class="category-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <path d="M5 17h14M5 17l-2-6h18l-2 6M7 11V7h10v4" />
+                            <circle cx="7" cy="17" r="2" />
+                            <circle cx="17" cy="17" r="2" />
+                        </svg>
+                    </div>
+                    <span>Hatch</span>
+                </a>
+                <a href="#" class="category-card" data-category="suv">
+                    <div class="category-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <path d="M3 13h18l-3-7H6L3 13ZM3 13v5h3m12 0h3v-5" />
+                            <circle cx="7" cy="18" r="2" />
+                            <circle cx="17" cy="18" r="2" />
+                        </svg>
+                    </div>
+                    <span>SUV</span>
+                </a>
+                <a href="#" class="category-card" data-category="picape">
+                    <div class="category-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <path d="M4 15h16M4 15l2-8h12l2 8M4 15v4h16v-4" />
+                            <circle cx="7" cy="19" r="2" />
+                            <circle cx="17" cy="19" r="2" />
+                        </svg>
+                    </div>
+                    <span>Picape</span>
+                </a>
+                <a href="#" class="category-card" data-category="moto">
+                    <div class="category-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <circle cx="5" cy="17" r="3" />
+                            <circle cx="19" cy="17" r="3" />
+                            <path d="M5 14l7-7 7 7" />
+                        </svg>
+                    </div>
+                    <span>Motos</span>
+                </a>
+                <a href="#" class="category-card" data-category="esportivo">
+                    <div class="category-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <path d="M4 10h16l-2 10H6L4 10Z" />
+                            <path d="M6 10l4-6h4l4 6" />
+                        </svg>
+                    </div>
+                    <span>Esportivos</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Our Vehicles Section -->
+    <section class="featured-section" id="nossos-veiculos">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Nossos Veículos</h2>
+                <a href="veiculos.html" class="see-all">Ver todos</a>
+            </div>
+            <div class="featured-filters">
+                <button class="filter-btn active" data-filter="all">Todos</button>
+                <button class="filter-btn" data-filter="novos">Novos</button>
+                <button class="filter-btn" data-filter="seminovos">Seminovos</button>
+                <button class="filter-btn" data-filter="usados">Usados</button>
+            </div>
+            <div class="cars-grid" id="carsGrid">
+                <!-- Cars will be loaded dynamically -->
+            </div>
+            <div class="load-more">
+                <button class="btn-load-more" id="loadMore">
+                    Carregar mais veículos
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about-section" id="sobre-nos">
+        <div class="container">
+            <div class="about-image">
+                <img src="https://images.unsplash.com/photo-1562141961-b5d1972b73c5?w=800&q=80"
+                    alt="Souza Select Car Showroom">
+                <div class="about-badge">
+                    <span class="about-badge-number">+10</span>
+                    <span class="about-badge-text">Anos de História</span>
+                </div>
+            </div>
+            <div class="about-text">
+                <h2 class="about-subtitle">Sobre a Souza Select Car</h2>
+                <h3 class="about-title">Excelência em cada <span style="color: #FF6B00;">detalhe</span> do seu novo
+                    veículo.</h3>
+                <p>
+                    Fundada com a missão de transformar o mercado de veículos premium, a Souza Select Car é mais que
+                    uma
+                    concessionária: é um centro de curadoria automotiva.
+                </p>
+                <p>
+                    Cada veículo em nosso estoque passa por uma rigorosa perícia técnica de 150 pontos, garantindo
+                    procedência, segurança e a máxima satisfação para quem não abre mão de qualidade superior.
+                </p>
+                <div class="about-features">
+                    <div class="about-feature">
+                        <h4>Estoque Selecionado</h4>
+                        <span>Apenas os melhores exemplares do mercado.</span>
+                    </div>
+                    <div class="about-feature">
+                        <h4>Consultoria VIP</h4>
+                        <span>Atendimento personalizado e transparente.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Evaluation CTA (Suggestion 1) -->
+    <section class="evaluation-cta" id="vender">
+        <div class="container">
+            <div class="evaluation-content">
+                <h2>Quer vender seu carro?</h2>
+                <p>Nós avaliamos seu veículo com transparência e oferecemos as melhores condições do mercado, seja
+                    na
+                    troca ou na compra direta.</p>
+                <button class="btn-evaluation" onclick="whatsappEvaluation()">Quero avaliar meu carro</button>
+            </div>
+        </div>
+    </section>
+
+
+
+
+
+    <!-- FAQ Section -->
+    <section class="faq-section">
+        <div class="container">
+            <h2 class="section-title">Perguntas frequentes</h2>
+            <div class="faq-list" id="faqList">
+                <!-- FAQ will be loaded dynamically -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer" id="contato">
+        <div class="footer-main">
+            <div class="container">
+                <div class="footer-grid">
+                    <div class="footer-brand">
+                        <div class="logo footer-logo">
+                            <img src="logo.png" alt="Souza Select Car" class="logo-img">
+                        </div>
+                        <p>A vitrine premium para quem busca exclusividade e procedência. Comprando ou vendendo,
+                            somos o
+                            seu parceiro de confiança no mercado automotivo.</p>
+                        <div class="social-links">
+                            <a href="#" aria-label="Facebook">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+                                </svg>
+                            </a>
+                            <a href="#" aria-label="Instagram">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                    <rect x="2" y="2" width="20" height="20" rx="5" />
+                                    <circle cx="12" cy="12" r="4" />
+                                    <circle cx="18" cy="6" r="1" />
+                                </svg>
+                            </a>
+                            <a href="#" aria-label="YouTube">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" />
+                                    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" />
+                                </svg>
+                            </a>
+                            <a href="#" aria-label="LinkedIn">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+                                    <rect x="2" y="9" width="4" height="12" />
+                                    <circle cx="4" cy="4" r="2" />
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="footer-links">
+                        <h4>Comprar</h4>
+                        <ul>
+                            <li><a href="veiculos.html">Todos os veículos</a></li>
+                            <li><a href="veiculos.html?condition=novo">Carros novos</a></li>
+                            <li><a href="veiculos.html?condition=seminovo">Seminovos</a></li>
+                            <li><a href="veiculos.html?lifestyle=premium">Modelos de Luxo</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-links">
+                        <h4>Vender</h4>
+                        <ul>
+                            <li><a href="#vender">Anunciar grátis</a></li>
+                            <li><a href="#vender">Como funciona</a></li>
+                            <li><a href="https://veiculos.fipe.org.br/" target="_blank">Tabela FIPE</a></li>
+                            <li><a
+                                    href="https://api.whatsapp.com/send?phone=5519998383275&text=Ol%C3%A1%21+Gostaria+de+dicas+para+vender+meu+ve%C3%ADculo.">Dicas
+                                    de venda</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-links">
+                        <h4>Institucional</h4>
+                        <ul>
+                            <li><a href="#hero">Início</a></li>
+                            <li><a href="#sobre-nos">Sobre nós</a></li>
+                            <li><a
+                                    href="https://api.whatsapp.com/send?phone=5519998383275&text=Ol%C3%A1%21+Gostaria+de+enviar+meu+curr%C3%ADculo+para+fazer+parte+da+equipe.">Trabalhe
+                                    conosco</a></li>
+                            <li><a
+                                    href="https://api.whatsapp.com/send?phone=5519998383275&text=Ol%C3%A1%21+Gostaria+de+ver+as+novidades+e+o+blog+da+Souza+Select+Car.">Blog</a>
+                            </li>
+                            <li><a href="#faqList">Dúvidas comuns</a></li>
+                            <li><a href="#contato">Nosso endereço</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-links">
+                        <h4>Contato</h4>
+                        <p style="margin-bottom:10px; font-size: 0.9em; color: var(--text-secondary);">
+                            <strong>Endereço:</strong><br>
+                            Rua Doutor Eloi Chaves, 3214<br>
+                            Vila Operária - Rio Claro/SP<br>
+                            CEP: 13504-186
+                        </p>
+                        <p style="margin-bottom:10px; font-size: 0.9em; color: var(--text-secondary);">
+                            <strong>Telefone / WhatsApp:</strong><br>
+                            (19) 99838-3275
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="container">
+                <p style="color: rgba(255, 255, 255, 0.5); font-size: 14px; margin: 0;">&copy; 2024 Souza Select
+                    Car.
+                    Todos os direitos reservados.</p>
+                <div class="footer-legal">
+                    <a href="#">Termos de uso</a>
+                    <a href="#">Política de privacidade</a>
+                    <a href="login.html" style="color: #d4af37; opacity: 0.5;">Área Restrita</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- WhatsApp Button -->
+    <div class="whatsapp-float-container">
+        <div class="whatsapp-label">Como posso te ajudar?</div>
+        <a href="https://api.whatsapp.com/send?phone=5519998383275&text=Olá! Gostaria de mais informações sobre os veículos."
+            class="whatsapp-float" target="_blank">
+            <span class="whatsapp-badge">1</span>
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor">
+                <path
+                    d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+            </svg>
+        </a>
+    </div>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop" aria-label="Voltar ao topo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m18 15-6-6-6 6" />
+        </svg>
+    </button>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

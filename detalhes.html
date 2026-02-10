@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO Meta Tags -->
+    <title>Detalhes do Veículo - Souza Select Car</title>
+    <meta name="description"
+        content="Veja todos os detalhes, especificações e fotos do veículo. Entre em contato via WhatsApp para mais informações.">
+    <meta name="keywords" content="detalhes veículo, especificações carro, comprar carro">
+    <meta name="author" content="Souza Select Car">
+
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="product">
+    <meta property="og:url" content="https://souzaselectcar.com/detalhes.html">
+    <meta property="og:title" content="Detalhes do Veículo - Souza Select Car">
+    <meta property="og:description" content="Confira todas as especificações e fotos deste veículo.">
+    <meta property="og:image" content="logo.png">
+    <meta property="og:locale" content="pt_BR">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Detalhes do Veículo - Souza Select Car">
+    <meta name="twitter:description" content="Confira todas as especificações deste veículo.">
+    <meta name="twitter:image" content="logo.png">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="logo.png">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        .details-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 40px;
+        }
+
+        .gallery-main img {
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+        }
+
+        .thumb-grid {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .info-card {
+            background: var(--bg-primary);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            position: sticky;
+            top: 100px;
+            height: fit-content;
+            box-shadow: var(--shadow-md);
+        }
+
+        .details-price {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 20px 0;
+        }
+
+        .specs-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+
+        .spec-item {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .spec-item span {
+            display: block;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .options-section {
+            margin-top: 40px;
+        }
+
+        .options-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            list-style: none;
+            padding: 0;
+        }
+
+        .options-list li {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .options-list li::before {
+            content: '✓';
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        @media (max-width: 900px) {
+            .details-container {
+                grid-template-columns: 1fr;
+            }
+
+            .info-card {
+                position: static;
+            }
+        }
+    </style>
+</head>
+
+<body style="background:var(--bg-secondary); color:var(--text-primary);">
+    <header class="header scrolled" id="header">
+        <div class="header-container">
+            <div class="logo">
+                <a href="index.html">
+                    <img src="logo.png" alt="Souza Select Car" class="logo-img">
+                </a>
+            </div>
+            <nav class="nav-desktop">
+                <ul>
+                    <li><a href="index.html">Início</a></li>
+                    <li><a href="veiculos.html">Estoque</a></li>
+                    <li><a href="index.html#contato">Contato</a></li>
+                </ul>
+            </nav>
+            <div class="header-spacer" style="flex: 1;"></div>
+
+
+
+            <!-- Theme Toggle Button -->
+            <button class="theme-toggle" id="themeToggle" aria-label="Alternar tema claro/escuro">
+                <svg class="icon-sun" viewBox="0 0 24 24">
+                    <path
+                        d="M12 18C8.68629 18 6 15.3137 6 12C6 8.68629 8.68629 6 12 6C15.3137 6 18 8.68629 18 12C18 15.3137 15.3137 18 12 18ZM12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16ZM11 1H13V4H11V1ZM11 20H13V23H11V20ZM3.51472 4.92893L4.92893 3.51472L7.05025 5.63604L5.63604 7.05025L3.51472 4.92893ZM16.9497 18.364L18.364 16.9497L20.4853 19.0711L19.0711 20.4853L16.9497 18.364ZM19.0711 3.51472L20.4853 4.92893L18.364 7.05025L16.9497 5.63604L19.0711 3.51472ZM5.63604 16.9497L7.05025 18.364L4.92893 20.4853L3.51472 19.0711L5.63604 16.9497ZM23 11V13H20V11H23ZM4 11V13H1V11H4Z" />
+                </svg>
+                <svg class="icon-moon" viewBox="0 0 24 24">
+                    <path
+                        d="M10 7C10 10.866 13.134 14 17 14C18.9584 14 20.729 13.1957 21.9995 11.8995C22 11.933 22 11.9665 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C12.0335 2 12.067 2 12.1005 2.00049C10.8043 3.27098 10 5.04157 10 7ZM4 12C4 16.4183 7.58172 20 12 20C15.0583 20 17.7158 18.2839 19.062 15.7621C18.3945 15.9187 17.7035 16 17 16C12.0294 16 8 11.9706 8 7C8 6.29648 8.08133 5.60547 8.2379 4.938C5.71611 6.28423 4 8.9417 4 12Z" />
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <main style="margin-top: 120px;">
+        <div class="details-container">
+            <div class="gallery-section">
+                <div class="gallery-main">
+                    <img id="detailsMainImg" src="" alt="Foto do Carro">
+                </div>
+                <div class="thumb-grid" id="detailsThumbs"></div>
+
+                <!-- Description Section -->
+                <div class="description-box"
+                    style="background:var(--bg-primary); padding:30px; border-radius:12px; border:1px solid var(--border-color); margin-top: 40px; box-shadow: var(--shadow-md);">
+                    <h3 style="color:var(--primary); margin-bottom: 20px; font-size:1.5rem;">Descrição do Veículo</h3>
+                    <div id="detailsDescription"
+                        style="color:var(--text-secondary); line-height:1.8; white-space: pre-wrap;">
+                        Carregando descrição...
+                    </div>
+                </div>
+
+                <div class="options-section">
+                    <h3 style="color:var(--text-primary); margin-bottom: 20px;">Opcionais e Equipamentos</h3>
+                    <ul class="options-list" id="detailsOptions"></ul>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <div class="info-card">
+                    <h1 id="detailsTitle" style="font-size: 2rem; font-weight: 800;">Carregando...</h1>
+                    <div id="detailsPrice" class="details-price">R$ 0,00</div>
+
+                    <div class="specs-list">
+                        <div class="spec-item">Ano<span><span id="detailsYear">-</span></span></div>
+                        <div class="spec-item">KM<span><span id="detailsKm">-</span></span></div>
+                        <div class="spec-item">Motor<span><span id="detailsEngine">-</span></span></div>
+                        <div class="spec-item">Câmbio<span><span id="detailsTransmission">-</span></span></div>
+                        <div class="spec-item">Potência<span><span id="detailsPower">-</span></span></div>
+                        <div class="spec-item">Cor<span><span id="detailsColor">-</span></span></div>
+                        <div class="spec-item">Combustível<span><span id="detailsFuel">-</span></span></div>
+                    </div>
+
+                    <button id="btnInterest" class="btn-anunciar"
+                        style="width:100%; padding: 20px; font-size: 1.1rem; background:#25D366; border-color:#25D366;">
+                        Tenho Interesse (WhatsApp)
+                    </button>
+                    <p style="text-align:center; color:#888; font-size: 0.8rem; margin-top: 15px;">
+                        Garantia de procedência Souza Select Car
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" id="contato">
+        <div class="footer-main">
+            <div class="container">
+                <div class="footer-grid"
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px;">
+                    <div class="footer-brand">
+                        <div class="logo footer-logo">
+                            <img src="logo.png" alt="Souza Select Car" class="logo-img">
+                        </div>
+                        <p>A vitrine premium para quem busca exclusividade e procedência. Comprando ou vendendo, somos o
+                            seu parceiro de confiança no mercado automotivo.</p>
+                    </div>
+                    <div class="footer-links">
+                        <h4>Comprar</h4>
+                        <ul>
+                            <li><a href="veiculos.html">Todos os veículos</a></li>
+                            <li><a href="veiculos.html?condition=novo">Carros novos</a></li>
+                            <li><a href="veiculos.html?condition=seminovo">Seminovos</a></li>
+                            <li><a href="veiculos.html?lifestyle=premium">Modelos de Luxo</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="footer-links">
+                        <h4>Contato</h4>
+                        <p style="color:#888; margin-bottom:10px;">
+                            <strong>Matriz:</strong><br>
+                            Rua 6, 3212, Santana, Rio Claro/SP<br>
+                            (19) 3523-4400 / (19) 99838-3275
+                        </p>
+                        <p style="color:#888; margin-bottom:10px;">
+                            <strong>Loja II:</strong><br>
+                            Av. 40, 935, Alto do Santana, Rio Claro/SP<br>
+                            (19) 3525-1400
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom" style="padding: 20px 0; border-top: 1px solid #222; text-align: center;">
+            <div class="container">
+                <p style="color: rgba(255, 255, 255, 0.5); font-size: 14px; margin: 0;">&copy; 2024 Souza Select Car.
+                    Todos os direitos reservados.</p>
+                <div class="footer-legal" style="display: flex; justify-content: center; gap: 20px; margin-top: 10px;">
+                    <a href="login.html"
+                        style="color: #d4af37; opacity: 0.5; text-decoration: none; font-size: 14px;">Área Restrita</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal Gallery (Premium) -->
+    <div class="modal-gallery" id="modalGallery">
+        <div class="modal-close" onclick="closeGallery()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"></path>
+            </svg>
+        </div>
+
+        <div class="modal-content-wrapper">
+            <div class="modal-nav modal-prev" onclick="changeModalImage(-1)">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 18l-6-6 6-6"></path>
+                </svg>
+            </div>
+
+            <img id="modalMainImg" class="modal-main-img" src="" alt="Premium View">
+
+            <div class="modal-nav modal-next" onclick="changeModalImage(1)">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18l6-6-6-6"></path>
+                </svg>
+            </div>
+        </div>
+
+        <div class="modal-counter" id="modalCounter">1 / 1</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

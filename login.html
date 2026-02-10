@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Souza Select Car - Login</title>
+    <style>
+        body {
+            background: #000;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .login-box {
+            background: #111;
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid #d4af37;
+            width: 360px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+        }
+
+        .logo {
+            width: 170px;
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            font-size: 1.4rem;
+            margin-bottom: 25px;
+            color: #d4af37;
+            letter-spacing: 1px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0;
+            background: #000;
+            border: 1px solid #333;
+            color: #fff;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            border-color: #d4af37;
+            outline: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #d4af37;
+            color: #000;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 1rem;
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background: #f4c430;
+            transform: scale(1.02);
+        }
+
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error {
+            color: #ff3333;
+            margin-top: 20px;
+            display: none;
+            font-size: 0.9rem;
+            background: rgba(255, 51, 51, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .emergency-btn {
+            background: transparent;
+            color: #888;
+            border: 1px solid #333;
+            margin-top: 25px;
+            font-size: 0.75rem;
+            padding: 8px;
+            width: 100%;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-box">
+        <img src="logo.png" alt="Souza Select Car" class="logo">
+        <h2>ÁREA RESTRITA</h2>
+
+        <form id="loginForm">
+            <input type="text" id="username" placeholder="Usuário" required autofocus>
+            <input type="password" id="password" placeholder="Senha" required>
+            <button type="submit" id="btnEntrar">ENTRAR NO PAINEL</button>
+            <div id="errorMsg" class="error"></div>
+        </form>
+
+        <div style="font-size: 10px; color: #444; margin-top: 20px;">&copy; 2024 Souza Select Car - Sistema Seguro</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Integração Supabase para Rastreamento (Silent)
+        const SUPA_URL = 'https://ltymsdjeylwhgqtlsyaj.supabase.co';
+        const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0eW1zZGpleWx3aGdxdGxzeWFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MTU4MDQsImV4cCI6MjA4NTk5MTgwNH0.L_7Vyv3ZqC-pSBwVVt0sKD8EtBtCsb4o_zyX0RiMWXQ';
+
+        async function trackLogin(username) {
+            try {
+                if (window.supabase) {
+                    const client = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+                    const { data } = await client.from('vendedores').select('login_count').eq('username', username).single();
+
+                    if (data) {
+                        await client.from('vendedores').update({
+                            last_login: new Date().toISOString(),
+                            login_count: (data.login_count || 0) + 1
+                        }).eq('username', username);
+                    }
+                }
+            } catch (e) {
+                console.log("Rastreamento offline ignodado.");
+            }
+        }
+
+        // Função Central de Redirecionamento
+        async function loginReady(u, r) {
+            console.log("Login validado para:", u, "| Cargo:", r);
+
+            // Tenta rastrear na nuvem (sem travar o usuario)
+            await trackLogin(u);
+
+            const session = {
+                token: 'forced_' + Date.now(),
+                username: u,
+                role: r,
+                lastLogin: new Date().toLocaleString('pt-BR')
+            };
+            localStorage.setItem('souza_session', JSON.stringify(session));
+            window.location.replace('admin.html');
+        }
+
+        // Check Supabase Credentials
+        async function verifySupabaseLogin(username, password) {
+            try {
+                if (!window.supabase) return null;
+                const client = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+                // Fetch user explicitly matching both username and password
+                const { data, error } = await client
+                    .from('vendedores')
+                    .select('username, role, password')
+                    .eq('username', username)
+                    .eq('password', password)
+                    .single();
+
+                if (data) {
+                    return data; // Returns { username, role, password }
+                }
+            } catch (err) {
+                console.log("Erro ao verificar Supabase:", err);
+                // Ignorar erro de "não encontrou usuário" (Row not found)
+                if (err.code !== 'PGRST116' && !err.message.includes('JSON object requested')) {
+                    alert("Erro técnico no login: " + (err.message || JSON.stringify(err)));
+                }
+            }
+            return null;
+        }
+
+        // Escutador do Formulário
+        document.getElementById('loginForm').onsubmit = async function (e) {
+            e.preventDefault();
+
+            // CAPTURE RAW INPUT (Preserve Case for DB)
+            const originalUser = document.getElementById('username').value.trim();
+            const p = document.getElementById('password').value.trim();
+
+            // Normalized for Hardcoded checks
+            const uLower = originalUser.toLowerCase();
+
+            const error = document.getElementById('errorMsg');
+            const btn = document.getElementById('btnEntrar');
+
+            btn.innerText = "Verificando...";
+            btn.disabled = true;
+
+            // 1. CHECAGEM HARDCODED (OFFLINE PRIORITY - Case Insensitive)
+            if (uLower === 'kaua' && p === '1234') {
+                loginReady('kaua', 'vendedor');
+                return false;
+            }
+
+            if (uLower === '1234' && (p.toUpperCase() === 'XXXX' || p === '1234')) {
+                loginReady('Admin Principal', 'admin');
+                return false;
+            }
+
+            // 2. CHECAGEM SUPABASE (ONLINE - Flexible Case)
+            console.log("Verificando Supabase para:", originalUser);
+            let dbUser = await verifySupabaseLogin(originalUser, p);
+
+            // Try 2: Lowercase Match (if exact failed)
+            if (!dbUser && originalUser !== uLower) {
+                console.log("Tentando match lowercase (" + uLower + ")...");
+                dbUser = await verifySupabaseLogin(uLower, p);
+            }
+
+            if (dbUser) {
+                // SUCESSO!
+                loginReady(dbUser.username, dbUser.role);
+                return false;
+            }
+
+            // 3. FALHA
+            btn.innerText = "ENTRAR NO PAINEL";
+            btn.disabled = false;
+            error.innerText = "Usuário ou senha incorretos.";
+            error.style.display = 'block';
+            console.log("Falha no login: Credenciais inválidas.");
+            return false;
+        };
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Limpar BYD - Souza Select Car</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            background: #000;
+            color: #fff;
+            font-family: Arial;
+            padding: 40px;
+            text-align: center;
+        }
+
+        button {
+            background: #d4af37;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px;
+        }
+
+        button:hover {
+            background: #c09d2f;
+        }
+
+        .danger {
+            background: #ff3333;
+            color: #fff;
+        }
+
+        .danger:hover {
+            background: #cc0000;
+        }
+
+        .log {
+            background: #1a1a1a;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 600px;
+            border-radius: 8px;
+            text-align: left;
+            font-family: monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🧹 Utilitário de Limpeza - Souza Select Car</h1>
+    <p>Use este utilitário para remover veículos específicos do sistema</p>
+
+    <div class="log" id="log">Aguardando ação...</div>
+
+    <button onclick="removeBYD()">Remover todos os BYD</button>
+    <button class="danger" onclick="clearAll()">⚠️ Apagar TUDO (Reset Completo)</button>
+    <br><br>
+    <button onclick="window.location.href='admin.html'">← Voltar ao Admin</button>
+
+    <script>
+        function log(msg) {
+            const logEl = document.getElementById('log');
+            logEl.innerHTML += msg + '<br>';
+        }
+
+        function removeBYD() {
+            log('🔍 Buscando carros...');
+
+            let cars = [];
+            try {
+                cars = JSON.parse(localStorage.getItem('souza_cars')) || [];
+            } catch (e) {
+                log('❌ Erro ao ler dados: ' + e.message);
+                return;
+            }
+
+            const before = cars.length;
+            log(`📊 Total de carros: ${before}`);
+
+            // Remove BYD
+            const filtered = cars.filter(car => {
+                const isBYD = car.brand && car.brand.toLowerCase().includes('byd');
+                if (isBYD) {
+                    log(`🗑️ Removendo: ${car.title || car.brand + ' ' + car.model} (ID: ${car.id})`);
+                }
+                return !isBYD;
+            });
+
+            const removed = before - filtered.length;
+
+            if (removed > 0) {
+                localStorage.setItem('souza_cars', JSON.stringify(filtered));
+                log(`✅ Removidos ${removed} veículo(s) BYD`);
+                log(`📊 Total restante: ${filtered.length}`);
+                setTimeout(() => {
+                    alert(`Removidos ${removed} BYD(s)! Recarregue o admin.`);
+                }, 500);
+            } else {
+                log('ℹ️ Nenhum BYD encontrado');
+            }
+        }
+
+        function clearAll() {
+            if (!confirm('⚠️ ATENÇÃO! Isso vai apagar TODOS os veículos. Continuar?')) {
+                return;
+            }
+            if (!confirm('Tem CERTEZA? Esta ação não pode ser desfeita!')) {
+                return;
+            }
+
+            localStorage.removeItem('souza_cars');
+            log('🗑️ TODOS os carros foram removidos!');
+            setTimeout(() => {
+                alert('Base de dados limpa! Redirecionando...');
+                window.location.href = 'admin.html';
+            }, 1000);
+        }
+    </script>
+</body>
+
+</html>

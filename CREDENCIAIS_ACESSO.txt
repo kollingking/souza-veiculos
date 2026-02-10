@@ -1,0 +1,31 @@
+SOUZA SELECT CAR - CREDENCIAIS DE ACESSO AO SISTEMA
+===================================================
+
+Este documento contém as informações confidenciais para acesso ao Painel Administrativo do sistema.
+
+1. ACESSO ADMINISTRADOR (MASTER)
+--------------------------------
+Usuario: 1234
+Senha:   XXXX (ou 1234)
+Permissão: TOTAL (Gerencia Vendedores, Configurações, Estoque Completo)
+
+2. ACESSO PADRÃO (VENDEDORES)
+-----------------------------
+Usuario: kaua
+Senha:   1234
+Permissão: RESTRITA (Apenas Cadastro e Visualização de Estoque Próprio)
+
+3. NOVOS USUÁRIOS
+-----------------
+Novos vendedores cadastrados pelo Admin terão o login e senha definidos no momento da criação.
+Eles terão permissões restritas automaticamente.
+
+---------------------------------------------------
+NOTA TÉCNICA:
+O sistema opera em modo híbrido (Online/Offline).
+- Se houver internet: Os dados são sincronizados com a nuvem (Supabase).
+- Se NÃO houver internet: O sistema funciona localmente e salva os dados no navegador.
+
+Suporte Técnico: Equipe de Desenvolvimento (Dev Senior)
+Data da Última Atualização: 07/02/2026
+===================================================

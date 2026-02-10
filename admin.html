@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO Meta Tags - Admin Page -->
+    <title>Admin - Souza Select Car | Painel Administrativo</title>
+    <meta name="description" content="Painel administrativo Souza Select Car - Acesso restrito">
+    <meta name="robots" content="noindex, nofollow"> <!-- Impede indexação do Google -->
+    <meta name="author" content="Souza Select Car">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="logo.png">
+
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+
+    <style>
+        /* Admin Specific Styles - Ensures visibility regardless of main CSS issues */
+        body {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 0 40px;
+            box-sizing: border-box;
+            justify-content: space-between;
+            color: var(--header-text);
+        }
+
+        .header-spacer {
+            height: 80px;
+        }
+
+        .admin-wrapper {
+            display: flex;
+            min-height: calc(100vh - 80px);
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            gap: 30px;
+        }
+
+        /* Sidebar */
+        .admin-sidebar {
+            width: 250px;
+            flex-shrink: 0;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            height: fit-content;
+            position: sticky;
+            top: 100px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sidebar-menu-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+            text-align: left;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .sidebar-menu-btn:hover,
+        .sidebar-menu-btn.active {
+            background: rgba(212, 175, 55, 0.15);
+            color: #d4af37;
+        }
+
+        /* Content Area */
+        .admin-main {
+            flex-grow: 1;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            color: #d4af37;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+
+        /* Forms */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-full {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            border-color: #d4af37;
+            outline: none;
+        }
+
+        .form-group select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Checkbox Grid */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            background: #0a0a0a;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px;
+        }
+
+        .option-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #d4af37;
+            cursor: pointer;
+        }
+
+        .option-item label {
+            color: #ddd;
+            cursor: pointer;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: #d4af37;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            transition: hover 0.3s;
+            margin-top: 20px;
+        }
+
+        .btn-primary:hover {
+            background: #b39025;
+        }
+
+        .btn-danger {
+            background: transparent;
+            color: #ff4444;
+            border: 1px solid #ff4444;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 68, 68, 0.1);
+        }
+
+        /* Car List Item */
+        .admin-car-item {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .car-item-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .car-item-thumb {
+            width: 80px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        /* ===== MOBILE OPTIMIZATIONS (Responsive) ===== */
+        @media (max-width: 900px) {
+            .header {
+                padding: 0 20px;
+                height: 60px;
+            }
+
+            .header-spacer {
+                height: 60px;
+            }
+
+            .admin-wrapper {
+                flex-direction: column;
+                padding: 15px;
+                gap: 20px;
+            }
+
+            /* Sidebar vira Menu Superior */
+            .admin-sidebar {
+                width: 100%;
+                position: static;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                padding: 15px;
+            }
+
+            .sidebar-menu-btn {
+                margin-bottom: 0;
+                text-align: center;
+                padding: 12px;
+                font-size: 0.9rem;
+                border: 1px solid var(--border-color);
+            }
+
+            .admin-main {
+                padding: 20px;
+            }
+
+            /* Formulário em Coluna Única */
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .options-grid {
+                grid-template-columns: 1fr 1fr;
+                /* 2 colunas para checkboxes no mobile */
+            }
+
+            /* Botões Maiores para Toque */
+            .btn-primary {
+                padding: 18px;
+                font-size: 1.2rem;
+            }
+
+            input,
+            select,
+            textarea {
+                font-size: 16px !important;
+                /* Evita zoom automático no iOS */
+                padding: 14px !important;
+            }
+
+            /* Lista de Carros Responsiva */
+            .admin-car-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .admin-car-actions {
+                width: 100%;
+                display: flex;
+                gap: 10px;
+            }
+
+            .admin-car-actions button {
+                flex: 1;
+                padding: 12px;
+            }
+
+            /* Ajuste Fino do Header Mobile */
+            .mobile-hide {
+                display: none !important;
+            }
+
+            .header-logo {
+                font-size: 1.2rem !important;
+                /* Menor para caber */
+            }
+
+            .admin-badge {
+                margin-left: 5px !important;
+                font-size: 0.7em !important;
+                background: #333;
+                padding: 2px 6px;
+                border-radius: 4px;
+            }
+
+            .header {
+                padding: 0 15px;
+                /* Menos padding lateral */
+                justify-content: space-between;
+                /* Garante separação */
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Simple Header -->
+    <header class="header">
+        <div class="header-logo"
+            style="font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; color: #d4af37; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            SOUZA <span class="mobile-hide">VEÍCULOS</span> <span class="admin-badge"
+                style="color: #fff; font-size: 0.8em; margin-left: 10px;">| ADMIN<span class="mobile-hide">
+                    PANEL</span></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <!-- Sound Toggle Button -->
+            <button class="sound-toggle" id="soundToggle" aria-label="Alternar som ambiente">
+                <svg class="icon-on" viewBox="0 0 24 24">
+                    <path fill="currentColor"
+                        d="M14 5v14l-7-5H3V10h4l7-5zm2 7c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                </svg>
+                <svg class="icon-off" viewBox="0 0 24 24" style="display: none;">
+                    <path fill="currentColor"
+                        d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l7 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
+                </svg>
+            </button>
+
+            <!-- Theme Toggle Button -->
+            <button class="theme-toggle" id="themeToggle" aria-label="Alternar tema claro/escuro">
+                <svg class="icon-sun" viewBox="0 0 24 24">
+                    <path
+                        d="M12 18C8.68629 18 6 15.3137 6 12C6 8.68629 8.68629 6 12 6C15.3137 6 18 8.68629 18 12C18 15.3137 15.3137 18 12 18ZM12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16ZM11 1H13V4H11V1ZM11 20H13V23H11V20ZM3.51472 4.92893L4.92893 3.51472L7.05025 5.63604L5.63604 7.05025L3.51472 4.92893ZM16.9497 18.364L18.364 16.9497L20.4853 19.0711L19.0711 20.4853L16.9497 18.364ZM19.0711 3.51472L20.4853 4.92893L18.364 7.05025L16.9497 5.63604L19.0711 3.51472ZM5.63604 16.9497L7.05025 18.364L4.92893 20.4853L3.51472 19.0711L5.63604 16.9497ZM23 11V13H20V11H23ZM4 11V13H1V11H4Z" />
+                </svg>
+                <svg class="icon-moon" viewBox="0 0 24 24">
+                    <path
+                        d="M10 7C10 10.866 13.134 14 17 14C18.9584 14 20.729 13.1957 21.9995 11.8995C22 11.933 22 11.9665 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C12.0335 2 12.067 2 12.1005 2.00049C10.8043 3.27098 10 5.04157 10 7ZM4 12C4 16.4183 7.58172 20 12 20C15.0583 20 17.7158 18.2839 19.062 15.7621C18.3945 15.9187 17.7035 16 17 16C12.0294 16 8 11.9706 8 7C8 6.29648 8.08133 5.60547 8.2379 4.938C5.71611 6.28423 4 8.9417 4 12Z" />
+                </svg>
+            </button>
+
+            <a href="index.html" style="color: #ccc; text-decoration: none;">Ver Site</a>
+            <button id="logoutBtn" class="btn-danger">SAIR</button>
+        </div>
+    </header>
+
+    <div class="header-spacer"></div>
+
+    <div class="admin-wrapper">
+
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <button class="sidebar-menu-btn active" id="btnTabCadastro" onclick="AdminTabs.open('cadastro')">🚗 Novo
+                Veículo</button>
+            <button class="sidebar-menu-btn" id="btnTabEstoque" onclick="AdminTabs.open('estoque')">📋 Estoque
+                Cadastrado</button>
+            <button class="sidebar-menu-btn" id="btnTabVendedores" onclick="AdminTabs.open('vendedores')"
+                style="display:none;">👥 Gerenciar Vendedores</button>
+            <button class="sidebar-menu-btn" id="btnTabConfig" onclick="AdminTabs.open('config')"
+                style="display:none;">⚙️ Configurações</button>
+
+            <div
+                style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #333; color: #666; font-size: 0.8rem;">
+                <div style="margin-bottom:5px;">Olá, <span style="color: #d4af37;" id="lblUsername">Admin</span></div>
+                <div style="font-size:0.7em; opacity:0.7;" id="lblRole">...</div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+
+            <!-- TAB: CADASTRO -->
+            <section id="tab-cadastro" class="admin-tab">
+                <h2 class="section-title">Cadastrar Novo Veículo</h2>
+
+                <!-- FEATURE: WhatsApp Copier (Suggestion 2) -->
+                <div
+                    style="background: #111; padding: 25px; border-radius: 12px; border: 2px solid #d4af37; margin-bottom: 30px; box-shadow: 0 5px 20px rgba(212, 175, 55, 0.1);">
+                    <h3 style="color: #d4af37; margin-top: 0; margin-bottom: 10px;">📋 Copiar do WhatsApp</h3>
+                    <p style="color: #888; font-size: 0.9rem; margin-bottom: 15px;">Cole o texto do WhatsApp abaixo para
+                        preencher os dados automaticamente.</p>
+                    <textarea id="whatsappPasteArea" rows="4"
+                        style="width: 100%; padding: 12px; background: #000; border: 1px solid #444; border-radius: 8px; color: #fff; font-family: 'Montserrat', sans-serif; margin-bottom: 15px;"
+                        placeholder="Ex: Ford Ranger V6 Limited 2024, 0km, Diesel, R$ 350.000..."></textarea>
+                    <button type="button" onclick="window.parseWhatsAppText()"
+                        style="background: #d4af37; color: #000; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.3s;">
+                        PREENCHER FORMULÁRIO AGORA
+                    </button>
+                    <p id="pasteStatus" style="display:none; margin-top: 10px; font-size: 0.8rem; font-weight: 600;">
+                    </p>
+                </div>
+
+                <!-- COPIED FORM STRUCTURE START (DO NOT MODIFY STRUCTURE) -->
+                <form id="addCarForm">
+                    <input type="hidden" name="carId">
+
+                    <!-- FIPE BLOCK -->
+                    <div
+                        style="background: #111; padding: 20px; border-radius: 8px; border: 1px solid #333; margin-bottom: 30px;">
+                        <h3 style="color: #d4af37; margin-top: 0; margin-bottom: 20px;">1. Dados do Veículo (FIPE)</h3>
+                        <div class="form-grid">
+                            <div class="form-group form-full">
+                                <label>Tipo de Veículo *</label>
+                                <select id="vehicleTypeSelect" onchange="window.toggleVehicleType()">
+                                    <option value="carros">Carros (Tabela FIPE)</option>
+                                    <option value="motos">Motos (Tabela FIPE)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <label>Marca *</label>
+                                    <button type="button" onclick="window.toggleManualBrand()"
+                                        style="background:transparent; border:none; color:#d4af37; font-size:0.7em; cursor:pointer; text-decoration:underline;">Nã
+                                        achou? Digitar manual</button>
+                                </div>
+                                <select id="brandSelect" required>
+                                    <option value="">Aguarde, carregando...</option>
+                                </select>
+                                <input type="text" id="brandManualInput" style="display:none;"
+                                    placeholder="Digite a Marca (ex: Chevrolet)">
+                            </div>
+                            <div class="form-group">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <label>Modelo *</label>
+                                    <button type="button" onclick="window.toggleManualModel()"
+                                        style="background:transparent; border:none; color:#d4af37; font-size:0.7em; cursor:pointer; text-decoration:underline;">Digitar
+                                        manual</button>
+                                </div>
+                                <select id="modelSelect" required disabled>
+                                    <option value="">Selecione a Marca primeiro</option>
+                                </select>
+                                <input type="text" id="modelManualInput" style="display:none;"
+                                    placeholder="Digite o Modelo (ex: Onix Plus)">
+                            </div>
+                            <div class="form-group">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <label>Ano Modelo *</label>
+                                    <button type="button" onclick="window.toggleManualYear()"
+                                        style="background:transparent; border:none; color:#d4af37; font-size:0.7em; cursor:pointer; text-decoration:underline;">Digitar
+                                        manual</button>
+                                </div>
+                                <select id="yearSelect" required disabled>
+                                    <option value="">Selecione o Modelo primeiro</option>
+                                </select>
+                                <input type="text" id="yearManualInput" style="display:none;"
+                                    placeholder="Ex: 2024 / 2025">
+                            </div>
+                            <div class="form-group">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <label>Versão (Confirmação) *</label>
+                                    <button type="button" onclick="window.toggleManualVersion()"
+                                        style="background:transparent; border:none; color:#d4af37; font-size:0.7em; cursor:pointer; text-decoration:underline;">Digitar
+                                        manual</button>
+                                </div>
+                                <select id="versionSelect" disabled>
+                                    <option value="">Selecione o Ano</option>
+                                </select>
+                                <input type="text" id="versionManualInput" style="display:none;"
+                                    placeholder="Digite a Versão Completa (ex: Onix 1.0 Turbo Premier)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DETAILS BLOCK -->
+                    <div
+                        style="background: #111; padding: 20px; border-radius: 8px; border: 1px solid #333; margin-bottom: 30px;">
+                        <h3 style="color: #d4af37; margin-top: 0; margin-bottom: 20px;">2. Detalhes da Venda</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Preço de Venda (R$) *</label>
+                                <input type="number" name="price" id="priceInput" required placeholder="Ex: 150000">
+                            </div>
+                            <div class="form-group">
+                                <label>Quilometragem *</label>
+                                <input type="text" name="km" required placeholder="Ex: 35.000 km">
+                                <small style="color:#666; font-size: 0.7em;">Apenas números</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Combustível *</label>
+                                <select name="fuel">
+                                    <option value="Flex">Flex</option>
+                                    <option value="Gasolina">Gasolina</option>
+                                    <option value="Diesel">Diesel</option>
+                                    <option value="Híbrido">Híbrido</option>
+                                    <option value="Elétrico">Elétrico</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Motorização (Ex: 1.0 Turbo)</label>
+                                <input type="text" name="engine" placeholder="Ex: 1.0 Turbo">
+                            </div>
+                            <div class="form-group">
+                                <label>Câmbio (Ex: Automático 6 marchas)</label>
+                                <input type="text" name="transmission" placeholder="Ex: Automático">
+                            </div>
+                            <div class="form-group">
+                                <label>Potência (CV)</label>
+                                <input type="text" name="power" placeholder="Ex: 116cv">
+                            </div>
+                            <div class="form-group">
+                                <label>Cor do Veículo</label>
+                                <input type="text" name="color" placeholder="Ex: Branco Pérola">
+                            </div>
+                            <div class="form-group">
+                                <label>Classificação (Filtro) *</label>
+                                <select name="condition" required>
+                                    <option value="seminovos" selected>Seminovo</option>
+                                    <option value="novos">Novo (0km)</option>
+                                    <option value="usados">Usado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group form-full">
+                            <label>Descrição Completa / Observações (Copie do WhatsApp)</label>
+                            <textarea name="description" id="descriptionInput" rows="10"
+                                style="width: 100%; padding: 12px; background: #0a0a0a; border: 1px solid #444; border-radius: 6px; color: white; font-family: 'Montserrat', sans-serif; resize: vertical;"
+                                placeholder="Cole aqui o texto completo do anúncio com emojis, detalhes de financiamento, etc..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- OPTIONS BLOCK -->
+                    <div
+                        style="background: #111; padding: 20px; border-radius: 8px; border: 1px solid #333; margin-bottom: 30px;">
+                        <h3 style="color: #d4af37; margin-top: 0; margin-bottom: 20px;">3. Opcionais & Fotos</h3>
+
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label style="margin-bottom: 15px;">Buscar ou Adicionar Opcional</label>
+                            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                                <input type="text" id="searchOptionInput"
+                                    placeholder="🔎 Filtrar opcionais existentes..."
+                                    style="background:#0a0a0a; border:1px solid #d4af3733; flex: 1;"
+                                    oninput="window.filterOptions()">
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="newOptionInput" placeholder="➕ Digitar novo para cadastrar...">
+                                <button type="button" id="btnAddOption"
+                                    style="background: #d4af37; color: black; border: none; padding: 0 20px; cursor: pointer; border-radius: 4px; font-weight: bold;">CADASTRAR</button>
+                            </div>
+                        </div>
+
+                        <div id="optionsContainer" class="options-grid">
+                            <div style="color: #888; padding: 20px; text-align: center;">Carregando opcionais...</div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 30px;">
+                            <label>Fotos (Selecione múltiplas)</label>
+                            <input type="file" id="carImageFile" multiple accept="image/*,.heic,.HEIC,.heif,.HEIF"
+                                style="padding: 20px; border: 2px dashed #333;">
+                            <div id="imagePreviews"
+                                style="display: flex; gap: 10px; overflow-x: auto; margin-top: 15px; padding-bottom: 10px;">
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 20px;">
+                            <label>Lifestyle (Categorias)</label>
+                            <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px;">
+                                <label><input type="checkbox" name="lifestyle" value="dia-a-dia"> Dia a Dia</label>
+                                <label><input type="checkbox" name="lifestyle" value="familia"> Família</label>
+                                <label><input type="checkbox" name="lifestyle" value="off-road"> Off-Road</label>
+                                <label><input type="checkbox" name="lifestyle" value="premium"> Premium</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-full">
+                        <button type="submit" class="btn-primary">SALVAR VEÍCULO</button>
+                        <button type="button"
+                            onclick="document.getElementById('addCarForm').reset(); window.scrollTo(0,0);"
+                            style="background:none; border:none; color:#888; width:100%; margin-top:10px; cursor:pointer;">Cancelar
+                            / Limpar</button>
+                    </div>
+
+                </form>
+                <!-- COPIED FORM STRUCTURE END -->
+            </section>
+
+            <!-- TAB: ESTOQUE -->
+            <section id="tab-estoque" class="admin-tab" style="display:none;">
+                <h2 class="section-title">Gerenciar Estoque</h2>
+                <div id="adminCarList">
+                    <div style="color: #666; padding: 40px; text-align: center;">Carregando veículos...</div>
+                </div>
+            </section>
+
+            <!-- TAB: VENDEDORES -->
+            <section id="tab-vendedores" class="admin-tab" style="display:none;">
+                <h2 class="section-title">Gerenciar Equipe</h2>
+
+                <div
+                    style="background: #111; padding: 30px; border-radius: 8px; border: 1px solid #333; margin-bottom: 40px;">
+                    <h3 style="color: #fff; margin-top: 0;">Novo Vendedor</h3>
+                    <form id="newSellerForm" onsubmit="event.preventDefault(); window.createSeller();">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: end;">
+                            <div class="form-group">
+                                <label>Nome de Usuário</label>
+                                <input type="text" id="sellerUser" required placeholder="Ex: ricardo.souza">
+                            </div>
+                            <div class="form-group">
+                                <label>Senha Temporária</label>
+                                <input type="text" id="sellerPass" required placeholder="******">
+                            </div>
+                            <button type="submit" class="btn-primary" style="margin:0; height: 45px;">CRIAR</button>
+                        </div>
+                    </form>
+                </div>
+
+                <h3 style="color: #d4af37;">Vendedores & Desempenho</h3>
+                <div id="sellersList"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                    <!-- JS Injected -->
+                </div>
+            </section>
+
+            <!-- TAB: CONFIGURAÇÕES -->
+            <section id="tab-config" class="admin-tab" style="display:none;">
+                <h2 class="section-title">Configurações do Site</h2>
+                <div
+                    style="background: #111; padding: 30px; border-radius: 8px; border: 1px solid #333; margin-bottom: 40px;">
+                    <h3 style="color: #fff; margin-top: 0;">Contato Principal (WhatsApp)</h3>
+                    <p style="color: #888; font-size: 0.9rem; margin-bottom: 15px;">Este número será usado em todos os
+                        botões de redirecionamento do site.</p>
+                    <div class="form-group">
+                        <label>Número do WhatsApp (apenas números, com DDD)</label>
+                        <input type="text" id="adminPhoneInput" placeholder="Ex: 5519998383275">
+                    </div>
+                    <button onclick="window.saveAdminSettings()" class="btn-primary"
+                        style="width: auto; margin-top: 20px;">SALVAR CONFIGURAÇÃO</button>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- SUPABASE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- HEIC CONVERTER (iPhone Support) -->
+    <script src="https://unpkg.com/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <!-- MAIN SCRIPT -->
+    <script src="script.js"></script>
+    <script>
+        // --- Inline Logic for Tab Management & Security ---
+
+        window.AdminTabs = {
+            open: function (tabName) {
+                // Hide all tabs
+                document.querySelectorAll('.admin-tab').forEach(t => t.style.display = 'none');
+                document.querySelectorAll('.sidebar-menu-btn').forEach(b => b.classList.remove('active'));
+
+                // Show requested
+                document.getElementById('tab-' + tabName).style.display = 'block';
+
+                // Highlight button
+                const btnId = 'btnTab' + tabName.charAt(0).toUpperCase() + tabName.slice(1);
+                const btn = document.getElementById(btnId);
+                if (btn) btn.classList.add('active');
+            }
+        };
+
+        // --- Init ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const session = JSON.parse(localStorage.getItem('souza_session') || '{}');
+
+            if (!session.username) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Display Info
+            document.getElementById('lblUsername').innerText = session.username;
+            document.getElementById('lblRole').innerText = session.role === 'admin' ? 'Administrador Principal' : 'Vendedor';
+
+            // Permission Check
+            if (session.role === 'admin') {
+                document.getElementById('btnTabVendedores').style.display = 'block';
+                document.getElementById('btnTabConfig').style.display = 'block';
+            } else {
+                document.getElementById('btnTabVendedores').style.display = 'none';
+                document.getElementById('btnTabConfig').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+
+</html>

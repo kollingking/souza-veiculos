@@ -1,0 +1,10 @@
+
+.DS_Store
+*_broken.*
+
+# Ignorar arquivos pesados
+*.zip
+*.rar
+fotos do site/Site - Veículos-20260206T225816Z-1-001.zip
+node_modules/
+.env
