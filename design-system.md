@@ -3,31 +3,30 @@
 ## Cores
 
 ### Texto
-- `text-primary`: #ffffff (Texto principal - branco puro)
-- `text-secondary`: #d1d5db (Texto secundário - cinza claro)
-- `text-muted`: #9ca3af (Texto terciário - cinza médio)
-- `text-gold`: #d4af37 (Texto dourado - premium)
-- `text-gold-light`: #f4e4b0 (Dourado claro - destaque)
-- `text-on-light`: #000000 (Texto sobre fundos claros)
+- `text-primary`: #1A1A2E (Texto principal)
+- `text-secondary`: #4B5563 (Texto secundário)
+- `text-muted`: #9CA3AF (Texto terciário)
+- `text-accent`: #FF7A1A (Texto de destaque - laranja)
+- `text-on-primary`: #FFFFFF (Texto sobre fundo laranja)
 
 ### Superfícies
-- `surface-page`: #000000 (Fundo da página - preto)
-- `surface-dark`: #0a0a0a (Fundo escuro secundário)
-- `surface-card`: #1a1a1a (Fundo de cards - cinza muito escuro)
-- `surface-elevated`: #1f1f1f (Elementos elevados)
-- `surface-overlay`: rgba(0, 0, 0, 0.85) (Overlay escuro)
+- `surface-page`: #F7F7FA (Fundo da página)
+- `surface-card`: #FFFFFF (Fundo de cards)
+- `surface-elevated`: #FFFFFF (Elementos elevados)
+- `surface-soft`: #FFF2E8 (Fundo suave laranja)
+- `surface-overlay`: rgba(26, 26, 46, 0.5) (Overlay)
 
 ### Ações
-- `action-primary`: #d4af37 (Dourado - CTA principal)
-- `action-primary-hover`: #f4c430 (Dourado claro - hover)
-- `action-secondary`: #1f1f1f (Cinza escuro - botão secundário)
-- `action-secondary-hover`: #2a2a2a (Cinza médio - hover secundário)
+- `action-primary`: #FF7A1A (Laranja - CTA principal)
+- `action-primary-hover`: #E66000 (Laranja escuro - hover)
+- `action-secondary`: #FFFFFF (Botão secundário claro)
+- `action-secondary-hover`: #F1F5F9 (Hover secundário)
 
 ### Bordas
-- `border-default`: #2a2a2a (Bordas padrão - cinza escuro)
-- `border-subtle`: #1a1a1a (Bordas sutis)
-- `border-gold`: #d4af37 (Bordas douradas - destaque)
-- `border-focus`: #f4c430 (Bordas em foco - dourado claro)
+- `border-default`: #E5E7EB (Bordas padrão)
+- `border-subtle`: #F1F5F9 (Bordas sutis)
+- `border-accent`: #FFB36B (Borda de destaque)
+- `border-focus`: #FFB36B (Borda em foco)
 
 ### Status
 - `status-success`: #10b981 (Verde - disponível)
@@ -100,25 +99,24 @@
 ### Botões
 
 #### Primary (`button-primary`)
-- Background: `action-primary` (dourado)
-- Color: `text-on-light` (preto)
+- Background: `action-primary` (laranja)
+- Color: `text-on-primary` (branco)
 - Padding: `space-3` `space-6`
 - Border radius: `radius-lg`
 - Font weight: `font-semibold`
 - Font size: `text-base`
 - Hover: background `action-primary-hover`, transform scale
-- Box shadow: `shadow-md` (dourado glow)
+- Box shadow: `shadow-md` (glow laranja)
 - Transition: all 0.3s ease
 
 #### Secondary (`button-secondary`)
-- Background: `action-secondary` (cinza escuro)
-- Color: `text-primary` (branco)
-- Border: 1px solid `border-default`
+- Background: `action-secondary` (claro)
+- Color: `text-primary` (escuro)
 - Padding: `space-3` `space-6`
 - Border radius: `radius-lg`
 - Font weight: `font-semibold`
 - Font size: `text-base`
-- Hover: background `action-secondary-hover`, border `border-gold`
+- Hover: background `action-secondary-hover`, border `border-accent`
 - Transition: all 0.3s ease
 
 #### Ghost (`button-ghost`)
@@ -159,10 +157,10 @@
 - Font size: `text-sm`
 - Font weight: `font-medium`
 
-#### Gold Badge (`badge-gold`)
+#### Accent Badge (`badge-accent`)
 - Background: transparent
-- Color: `text-gold` (dourado)
-- Border: 1px solid `border-gold`
+- Color: `text-accent` (laranja)
+- Border: 1px solid `border-accent`
 - Padding: `space-1` `space-3`
 - Border radius: `radius-full`
 - Font size: `text-sm`

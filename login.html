@@ -5,11 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Souza Select Car - Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
     <style>
         body {
-            background: #000;
-            color: #fff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -18,13 +23,13 @@
         }
 
         .login-box {
-            background: #111;
+            background: var(--bg-primary);
             padding: 40px;
             border-radius: 20px;
-            border: 1px solid #d4af37;
+            border: 1px solid var(--border-color);
             width: 360px;
             text-align: center;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+            box-shadow: var(--shadow-xl);
         }
 
         .logo {
@@ -35,7 +40,7 @@
         h2 {
             font-size: 1.4rem;
             margin-bottom: 25px;
-            color: #d4af37;
+            color: var(--primary);
             letter-spacing: 1px;
         }
 
@@ -43,9 +48,9 @@
             width: 100%;
             padding: 14px;
             margin: 10px 0;
-            background: #000;
-            border: 1px solid #333;
-            color: #fff;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
             border-radius: 8px;
             box-sizing: border-box;
             font-size: 1rem;
@@ -53,15 +58,16 @@
         }
 
         input:focus {
-            border-color: #d4af37;
+            border-color: var(--primary);
             outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 122, 26, 0.12);
         }
 
         button {
             width: 100%;
             padding: 14px;
-            background: #d4af37;
-            color: #000;
+            background: var(--primary);
+            color: #fff;
             border: none;
             font-weight: bold;
             cursor: pointer;
@@ -72,7 +78,7 @@
         }
 
         button:hover {
-            background: #f4c430;
+            background: var(--primary-dark);
             transform: scale(1.02);
         }
 
@@ -87,15 +93,15 @@
             margin-top: 20px;
             display: none;
             font-size: 0.9rem;
-            background: rgba(255, 51, 51, 0.1);
+            background: rgba(255, 51, 51, 0.08);
             padding: 10px;
             border-radius: 5px;
         }
 
         .emergency-btn {
             background: transparent;
-            color: #888;
-            border: 1px solid #333;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
             margin-top: 25px;
             font-size: 0.75rem;
             padding: 8px;
@@ -117,7 +123,7 @@
             <div id="errorMsg" class="error"></div>
         </form>
 
-        <div style="font-size: 10px; color: #444; margin-top: 20px;">&copy; 2024 Souza Select Car - Sistema Seguro</div>
+        <div style="font-size: 10px; color: #444; margin-top: 20px;">&copy; 2026 Souza Select Car - Sistema Seguro</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

@@ -32,6 +32,36 @@ const BRAND_ALIASES = {
     'mb': 'Mercedes-Benz'
 };
 
+const VEHICLE_MEDIA_STORAGE_KEY = 'souza_vehicle_media_v1';
+
+function getVehicleMediaStore() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(VEHICLE_MEDIA_STORAGE_KEY) || '{}');
+        return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function getVehicleVideoUrlById(id) {
+    if (id === null || id === undefined) return '';
+    const store = getVehicleMediaStore();
+    return (store[String(id)] || '').toString().trim();
+}
+
+function setVehicleVideoUrlById(id, rawUrl) {
+    if (id === null || id === undefined) return;
+    const store = getVehicleMediaStore();
+    const key = String(id);
+    const value = (rawUrl || '').toString().trim();
+    if (value) {
+        store[key] = value;
+    } else {
+        delete store[key];
+    }
+    localStorage.setItem(VEHICLE_MEDIA_STORAGE_KEY, JSON.stringify(store));
+}
+
 function normalizeBrand(input) {
     if (!input) return '';
     const cleanInput = input.toString().toLowerCase().trim();
@@ -90,6 +120,10 @@ const DB = {
         // 4. Transform and Format
         return finalData.map(car => {
             car.brand = normalizeBrand(car.brand);
+            const localVideo = getVehicleVideoUrlById(car.id);
+            if (localVideo && !car.videoUrl) {
+                car.videoUrl = localVideo;
+            }
 
             // Detector Inteligente de Motos...
             const bikeBrands = ['yamaha', 'triumph', 'harley-davidson', 'ducati', 'royal enfield', 'kawasaki', 'ktm', 'shineray', 'dafra', 'suzuki', 'bmw motorrad'];
@@ -110,6 +144,8 @@ const DB = {
                 const { data, error } = await supabaseClient.from('veiculos').select('*').eq('id', id).single();
                 if (!error && data) {
                     data.brand = normalizeBrand(data.brand);
+                    const localVideo = getVehicleVideoUrlById(data.id);
+                    if (localVideo && !data.videoUrl) data.videoUrl = localVideo;
                     return data;
                 }
             } catch (e) { }
@@ -154,7 +190,7 @@ const DB = {
 
                 const { error } = await supabaseClient.from('veiculos').upsert(dbPayload);
                 if (error) throw error;
-                showToast("☁️ Sincronizado na nuvem!");
+                showToast("Sincronizado na nuvem!");
             } catch (e) {
                 console.error("Supabase Save Fail:", e);
                 showToast("Aviso: Salvo apenas no dispositivo (sem internet)");
@@ -182,6 +218,7 @@ const DB = {
         else currentData.unshift(localCar);
 
         localStorage.setItem('souza_cars', JSON.stringify(currentData.slice(0, 50))); // Limit local history
+        setVehicleVideoUrlById(carObj.id, carObj.videoUrl || carObj.video || '');
         return true;
     },
 
@@ -195,20 +232,75 @@ const DB = {
         try { current = JSON.parse(localStorage.getItem('souza_cars') || '[]'); } catch (e) { }
         const filtered = current.filter(c => c.id != id);
         localStorage.setItem('souza_cars', JSON.stringify(filtered));
+        setVehicleVideoUrlById(id, '');
         return true;
     }
 };
 
 // Global State
 var carsData = [];
+const ANALYTICS_STORAGE_KEY = 'souza_analytics_v1';
+
+function getTodayKey() {
+    return new Date().toISOString().split('T')[0];
+}
+
+function readAnalytics() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(ANALYTICS_STORAGE_KEY) || '{}');
+        return {
+            totalAccess: Number(parsed.totalAccess || 0),
+            dailyAccess: parsed.dailyAccess && typeof parsed.dailyAccess === 'object' ? parsed.dailyAccess : {},
+            pageAccess: parsed.pageAccess && typeof parsed.pageAccess === 'object' ? parsed.pageAccess : {},
+            vehicleViews: parsed.vehicleViews && typeof parsed.vehicleViews === 'object' ? parsed.vehicleViews : {}
+        };
+    } catch (e) {
+        return { totalAccess: 0, dailyAccess: {}, pageAccess: {}, vehicleViews: {} };
+    }
+}
+
+function saveAnalytics(data) {
+    localStorage.setItem(ANALYTICS_STORAGE_KEY, JSON.stringify(data));
+}
+
+function pruneDailyAccess(dailyAccess, maxDays = 90) {
+    const keys = Object.keys(dailyAccess || {}).sort();
+    if (keys.length <= maxDays) return dailyAccess;
+    const keep = keys.slice(keys.length - maxDays);
+    const next = {};
+    keep.forEach((k) => {
+        next[k] = Number(dailyAccess[k] || 0);
+    });
+    return next;
+}
+
+function recordSiteAccess() {
+    const analytics = readAnalytics();
+    const today = getTodayKey();
+    const page = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+
+    analytics.totalAccess += 1;
+    analytics.dailyAccess[today] = Number(analytics.dailyAccess[today] || 0) + 1;
+    analytics.pageAccess[page] = Number(analytics.pageAccess[page] || 0) + 1;
+    analytics.dailyAccess = pruneDailyAccess(analytics.dailyAccess);
+    saveAnalytics(analytics);
+}
+
+function recordVehicleView(vehicleId) {
+    if (!vehicleId && vehicleId !== 0) return;
+    const analytics = readAnalytics();
+    const key = String(vehicleId);
+    analytics.vehicleViews[key] = Number(analytics.vehicleViews[key] || 0) + 1;
+    saveAnalytics(analytics);
+}
 
 // Função para atualizar o estado global e a UI
 async function refreshAppData() {
-    console.log('🔄 [RefreshData] Buscando dados frescos do DB...');
+    console.log('[RefreshData] Buscando dados frescos do DB...');
     const freshData = await DB.getAllCars();
     carsData = Array.isArray(freshData) ? freshData : [];
 
-    console.log(`✅ [RefreshData] Estoque atualizado: ${carsData.length} veículos.`);
+    console.log(`[RefreshData] Estoque atualizado: ${carsData.length} veículos.`);
 
     // 1. Atualiza Grid de Veículos (se existir)
     if (document.getElementById('vehiclesGrid')) {
@@ -223,6 +315,7 @@ async function refreshAppData() {
 
     // 2. Atualiza Lista Administrativa
     if (document.getElementById('adminCarList') && window.renderAdminList) window.renderAdminList();
+    if (document.getElementById('dashboardTopVehicles') && window.renderAdminDashboard) window.renderAdminDashboard();
 
     // 3. Atualiza Home Page (Grid e Filtros)
     if (document.getElementById('carsGrid')) {
@@ -239,7 +332,7 @@ async function refreshAppData() {
 
 // Função para inicializar a grid da home page
 // Estado global para controle de paginação na Home
-window.homeItemsLimit = 4;
+window.homeItemsLimit = Infinity;
 window.currentHomeFilter = 'all';
 
 function initHomeGrid() {
@@ -274,14 +367,10 @@ function initHomeGrid() {
 
     function updateDisplay() {
         const filtered = getFilteredCars();
-        renderCarGrid('carsGrid', filtered.slice(0, window.homeItemsLimit));
+        renderCarGrid('carsGrid', filtered);
 
         if (loadMoreBtn) {
-            if (window.homeItemsLimit >= filtered.length) {
-                loadMoreBtn.style.display = 'none';
-            } else {
-                loadMoreBtn.style.display = 'inline-block';
-            }
+            loadMoreBtn.style.display = 'none';
         }
     }
 
@@ -289,12 +378,8 @@ function initHomeGrid() {
     updateDisplay();
 
     // Botão Carregar Mais
-    if (loadMoreBtn && !loadMoreBtn.hasAttribute('data-bound')) {
-        loadMoreBtn.setAttribute('data-bound', 'true');
-        loadMoreBtn.onclick = () => {
-            window.homeItemsLimit += 4; // Adiciona mais uma fileira (4 veículos)
-            updateDisplay();
-        };
+    if (loadMoreBtn) {
+        loadMoreBtn.style.display = 'none';
     }
 
     // Configurar botões de filtro
@@ -307,7 +392,7 @@ function initHomeGrid() {
                 btn.classList.add('active');
 
                 window.currentHomeFilter = btn.dataset.filter;
-                window.homeItemsLimit = 4; // Reseta limite ao mudar filtro
+                window.homeItemsLimit = Infinity;
                 updateDisplay();
             };
         });
@@ -479,12 +564,12 @@ async function convertHeicFile(file) {
     console.log(`[Motor-iPhone] Processando: ${file.name} | Tamanho: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
 
     if (typeof heic2any === 'undefined') {
-        showToast("⚠️ Sistema de fotos iPhone ainda carregando...", 3000);
+        showToast("Sistema de fotos iPhone ainda carregando...", 3000);
         return file;
     }
 
     try {
-        showToast("⚙️ Convertendo foto do iPhone... (Aguarde)", 5000);
+        showToast("Convertendo foto do iPhone... (Aguarde)", 5000);
 
         // Técnica Avançada: Ler como ArrayBuffer primeiro
         const buffer = await file.arrayBuffer();
@@ -499,16 +584,16 @@ async function convertHeicFile(file) {
         const finalBlob = Array.isArray(result) ? result[0] : result;
         const newName = file.name.replace(/\.(heic|heif)$/i, "") + ".jpg";
 
-        console.log(`[Motor-iPhone] ✅ Sucesso: ${newName}`);
+        console.log(`[Motor-iPhone] Sucesso: ${newName}`);
         return new File([finalBlob], newName, { type: "image/jpeg" });
 
     } catch (error) {
         console.error(`[Motor-iPhone] Erro na conversão:`, error);
 
         if (error.message && (error.message.includes('supported') || error.code === 2)) {
-            showToast("⚠️ Esta foto do iPhone é incompatível. Tente uma foto comum ou print.", 6000);
+            showToast("Esta foto do iPhone é incompatível. Tente uma foto comum ou print.", 6000);
         } else {
-            showToast("❌ Erro ao converter foto do iPhone.", 3000);
+            showToast("Erro ao converter foto do iPhone.", 3000);
         }
 
         return file; // Retorna original como fallback
@@ -553,6 +638,34 @@ function whatsappInterest(carTitle) {
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
 }
 
+function resolveCardImagePair(car) {
+    const images = Array.isArray(car.images) && car.images.length > 0
+        ? car.images
+        : [car.image || 'logo.png'];
+    const primary = images[0] || car.image || 'logo.png';
+    const hover = images[1] || primary;
+    return { primary, hover };
+}
+
+const prefetchedCardImages = new Set();
+function prefetchCardImage(src) {
+    if (!src || prefetchedCardImages.has(src)) return;
+    prefetchedCardImages.add(src);
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = src;
+}
+
+window.toggleCarCardImage = (cardEl, isHover) => {
+    if (!cardEl) return;
+    const img = cardEl.querySelector('img[data-default-src]');
+    if (!img) return;
+
+    const defaultSrc = img.dataset.defaultSrc || img.src;
+    const hoverSrc = img.dataset.hoverSrc || defaultSrc;
+    img.src = isHover ? hoverSrc : defaultSrc;
+};
+
 function fileToBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -568,7 +681,7 @@ function renderCarGrid(containerId, cars) {
     if (!container) return;
 
     if (cars.length === 0) {
-        container.innerHTML = '<p style="color: #fff; text-align: center; grid-column: 1/-1;">Nenhum veículo encontrado com esses filtros.</p>';
+        container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; grid-column: 1/-1;">Nenhum veículo encontrado com esses filtros.</p>';
         return;
     }
 
@@ -579,11 +692,13 @@ function renderCarGrid(containerId, cars) {
             previewOptions = car.options.slice(0, 5);
         }
 
+        const { primary, hover } = resolveCardImagePair(car);
+        if (hover && hover !== primary) prefetchCardImage(hover);
+
         return `
-        <article class="car-card" onclick="window.location.href='detalhes.html?id=${car.id}'" style="cursor:pointer">
+        <article class="car-card" onclick="window.location.href='detalhes.html?id=${car.id}'" onmouseenter="toggleCarCardImage(this, true)" onmouseleave="toggleCarCardImage(this, false)" style="cursor:pointer">
             <div class="car-image">
-                <img src="${Array.isArray(car.images) && car.images.length > 0 ? car.images[0] : (car.image || 'logo.png')}" alt="${car.title}" loading="lazy" onerror="this.src='logo.png'">
-                ${car.badge ? `<span class="car-badge">${car.badge}</span>` : ''}
+                <img src="${primary}" data-default-src="${primary}" data-hover-src="${hover}" alt="${car.title}" loading="lazy" decoding="async" onerror="this.src='logo.png'">
             </div>
             <div class="car-info">
                 <h3 class="car-title">${capitalizeText(car.title)}</h3>
@@ -600,9 +715,11 @@ function renderCarGrid(containerId, cars) {
                 <div class="car-price">
                     <span class="price-value">${formatPrice(car.price)}</span>
                 </div>
-                <div class="car-actions" style="margin-top: 15px; display: flex; gap: 10px;">
-                    <button class="btn-anunciar" style="flex: 1; padding: 10px;" onclick="event.stopPropagation(); window.location.href='detalhes.html?id=${car.id}'">Detalhes</button>
-                    <button class="btn-anunciar" style="flex: 1; padding: 10px; background: #25D366; border-color: #25D366;" onclick="event.stopPropagation(); whatsappInterest('${car.title.replace(/'/g, "\\'")}')">WhatsApp</button>
+                <div class="car-actions">
+                    <button class="btn-details"
+                        onclick="event.stopPropagation(); window.location.href='detalhes.html?id=${car.id}'">Detalhes</button>
+                    <button class="btn-whatsapp"
+                        onclick="event.stopPropagation(); whatsappInterest('${car.title.replace(/'/g, "\\'")}')">Contato</button>
                 </div>
             </div>
         </article>
@@ -611,7 +728,7 @@ function renderCarGrid(containerId, cars) {
 
 // ===== FEATURE: Filter Logic (Veiculos Page) =====
 function initFilters() {
-    console.log("🚀 [FilterInit] Aplicando sincronização profunda com URL...");
+    console.log("[FilterInit] Aplicando sincronização profunda com URL...");
     const typeSelect = document.getElementById('filterType');
     const brandSelect = document.getElementById('filterBrand');
     const modelSelect = document.getElementById('filterModel');
@@ -828,112 +945,377 @@ function initFilters() {
 
 // Global render function for Admin List
 // Global render function for Admin List
+window.adminStepState = { current: 1, total: 3 };
+window.adminStockFilterState = {
+    search: '',
+    brand: '',
+    status: '',
+    fuel: '',
+    yearMin: 1990,
+    yearMax: 2030,
+    priceMin: 0,
+    priceMax: 1000000
+};
+window.adminSellerCache = [];
+
+function parseYearFromCar(car) {
+    const raw = (car.year || '').toString();
+    const match = raw.match(/\d{4}/);
+    return match ? Number(match[0]) : 0;
+}
+
+function parsePriceFromCar(car) {
+    return Number(car.price) || 0;
+}
+
+function getNormalizedStockFilters() {
+    const state = window.adminStockFilterState || {};
+    const yearMin = Number(state.yearMin || 0);
+    const yearMax = Number(state.yearMax || 9999);
+    const priceMin = Number(state.priceMin || 0);
+    const priceMax = Number(state.priceMax || Number.MAX_SAFE_INTEGER);
+
+    return {
+        search: (state.search || '').toLowerCase().trim(),
+        brand: (state.brand || '').trim(),
+        status: (state.status || '').trim(),
+        fuel: (state.fuel || '').trim(),
+        yearMin: Math.min(yearMin, yearMax),
+        yearMax: Math.max(yearMin, yearMax),
+        priceMin: Math.min(priceMin, priceMax),
+        priceMax: Math.max(priceMin, priceMax)
+    };
+}
+
+function applyAdminStockFilters(cars) {
+    const f = getNormalizedStockFilters();
+
+    return (cars || []).filter((car) => {
+        const title = (car.title || '').toLowerCase();
+        const brand = (car.brand || '').toLowerCase();
+        const model = (car.model || '').toLowerCase();
+        const seller = (car.createdBy || 'Sistema').toLowerCase();
+        const fuel = (car.fuel || 'Flex').toLowerCase();
+        const code = (car.code || '').toLowerCase();
+        const year = parseYearFromCar(car);
+        const price = parsePriceFromCar(car);
+
+        if (f.search) {
+            const inText = title.includes(f.search) || brand.includes(f.search) || model.includes(f.search) || seller.includes(f.search) || code.includes(f.search);
+            const inPrice = formatPrice(price).toLowerCase().includes(f.search);
+            if (!inText && !inPrice) return false;
+        }
+
+        if (f.brand && (car.brand || '') !== f.brand) return false;
+        if (f.status && (car.condition || '') !== f.status) return false;
+        if (f.fuel && (car.fuel || 'Flex').toLowerCase() !== f.fuel.toLowerCase()) return false;
+
+        if (year > 0 && (year < f.yearMin || year > f.yearMax)) return false;
+        if (price < f.priceMin || price > f.priceMax) return false;
+
+        return true;
+    });
+}
+
+function syncStockFilterOptions() {
+    const brandSelect = document.getElementById('stockFilterBrand');
+
+    if (!brandSelect) return;
+
+    const selectedBrand = brandSelect.value;
+
+    const brands = [...new Set((carsData || []).map(c => c.brand).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+    brandSelect.innerHTML = '<option value="">Todas</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
+
+    if (brands.includes(selectedBrand)) brandSelect.value = selectedBrand;
+}
+
+function syncStockRangeBounds() {
+    const yearMinInput = document.getElementById('stockYearMin');
+    const yearMaxInput = document.getElementById('stockYearMax');
+    const priceMinInput = document.getElementById('stockPriceMin');
+    const priceMaxInput = document.getElementById('stockPriceMax');
+
+    if (!yearMinInput || !yearMaxInput || !priceMinInput || !priceMaxInput) return;
+
+    const years = (carsData || []).map(parseYearFromCar).filter(y => y > 0);
+    const prices = (carsData || []).map(parsePriceFromCar).filter(p => p > 0);
+
+    const minYear = years.length ? Math.min(...years) : 1990;
+    const maxYear = years.length ? Math.max(...years) : 2030;
+
+    const minPrice = prices.length ? Math.min(...prices) : 0;
+    const maxPrice = prices.length ? Math.max(...prices) : 1000000;
+
+    yearMinInput.min = String(minYear);
+    yearMinInput.max = String(maxYear);
+    yearMaxInput.min = String(minYear);
+    yearMaxInput.max = String(maxYear);
+
+    priceMinInput.min = String(minPrice);
+    priceMinInput.max = String(maxPrice);
+    priceMaxInput.min = String(minPrice);
+    priceMaxInput.max = String(maxPrice);
+
+    if (!window.adminStockRangesBootstrapped) {
+        window.adminStockFilterState.yearMin = minYear;
+        window.adminStockFilterState.yearMax = maxYear;
+        window.adminStockFilterState.priceMin = minPrice;
+        window.adminStockFilterState.priceMax = maxPrice;
+
+        yearMinInput.value = String(minYear);
+        yearMaxInput.value = String(maxYear);
+        priceMinInput.value = String(minPrice);
+        priceMaxInput.value = String(maxPrice);
+
+        window.adminStockRangesBootstrapped = true;
+    } else {
+        const s = window.adminStockFilterState;
+        yearMinInput.value = String(Math.max(minYear, Math.min(Number(s.yearMin), maxYear)));
+        yearMaxInput.value = String(Math.max(minYear, Math.min(Number(s.yearMax), maxYear)));
+        priceMinInput.value = String(Math.max(minPrice, Math.min(Number(s.priceMin), maxPrice)));
+        priceMaxInput.value = String(Math.max(minPrice, Math.min(Number(s.priceMax), maxPrice)));
+    }
+}
+
+function updateStockRangeLabels() {
+    const yearMinInput = document.getElementById('stockYearMin');
+    const yearMaxInput = document.getElementById('stockYearMax');
+    const priceMinInput = document.getElementById('stockPriceMin');
+    const priceMaxInput = document.getElementById('stockPriceMax');
+
+    const yearMinLabel = document.getElementById('stockYearMinLabel');
+    const yearMaxLabel = document.getElementById('stockYearMaxLabel');
+    const priceMinLabel = document.getElementById('stockPriceMinLabel');
+    const priceMaxLabel = document.getElementById('stockPriceMaxLabel');
+
+    if (yearMinInput && yearMinLabel) yearMinLabel.textContent = yearMinInput.value;
+    if (yearMaxInput && yearMaxLabel) yearMaxLabel.textContent = yearMaxInput.value;
+    if (priceMinInput && priceMinLabel) priceMinLabel.textContent = formatPrice(Number(priceMinInput.value || 0));
+    if (priceMaxInput && priceMaxLabel) priceMaxLabel.textContent = formatPrice(Number(priceMaxInput.value || 0));
+}
+
+function formatStoreAge(createdAt) {
+    if (!createdAt) return 'Na loja desde: data nao informada';
+    const date = new Date(createdAt);
+    if (Number.isNaN(date.getTime())) return 'Na loja desde: data invalida';
+
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+    const shortDate = date.toLocaleDateString('pt-BR');
+
+    if (diffDays === 0) return `Na loja desde ${shortDate} (hoje)`;
+    if (diffDays === 1) return `Na loja desde ${shortDate} (ha 1 dia)`;
+    return `Na loja desde ${shortDate} (ha ${diffDays} dias)`;
+}
+
+function buildSaleText(car) {
+    if (!car) return '';
+    const title = capitalizeText(car.title || `${car.brand || ''} ${car.model || ''}`.trim());
+    const year = car.year || 'Ano nao informado';
+    const km = car.km || 'Km nao informado';
+    const fuel = car.fuel || 'Flex';
+    const trans = car.transmission || 'Cambio nao informado';
+    const price = formatPrice(car.price || 0);
+    const topOptions = Array.isArray(car.options) ? car.options.slice(0, 5) : [];
+    const highlights = topOptions.length ? topOptions.join(', ') : 'Excelente estado geral e muito bem cuidado';
+    const phone = localStorage.getItem('souza_admin_phone') || '5519998383275';
+
+    return `${title}
+${year} | ${km} | ${fuel} | ${trans}
+Valor: ${price}
+Destaques: ${highlights}.
+Fale com a gente no WhatsApp: https://wa.me/${phone}`;
+}
+
+async function copyTextToClipboard(text) {
+    if (!text) return false;
+    try {
+        await navigator.clipboard.writeText(text);
+        return true;
+    } catch (e) {
+        const temp = document.createElement('textarea');
+        temp.value = text;
+        document.body.appendChild(temp);
+        temp.select();
+        const ok = document.execCommand('copy');
+        temp.remove();
+        return ok;
+    }
+}
+
+window.generateCarSaleText = async (id) => {
+    const car = (carsData || []).find((item) => Number(item.id) === Number(id));
+    if (!car) {
+        showToast('Veículo não encontrado para gerar texto.');
+        return;
+    }
+
+    const text = buildSaleText(car);
+    const copied = await copyTextToClipboard(text);
+    if (copied) {
+        showToast('Texto de marketing copiado.');
+    } else {
+        showToast('Não foi possível copiar automaticamente.');
+        alert(text);
+    }
+};
+
+window.shareCarFromAdmin = (id) => {
+    const car = (carsData || []).find((item) => Number(item.id) === Number(id));
+    if (!car) {
+        showToast('Veículo não encontrado para compartilhar.');
+        return;
+    }
+
+    const baseUrl = `${window.location.origin}${window.location.pathname.replace(/\/[^/]*$/, '/')}`;
+    const detailsUrl = `${baseUrl}detalhes.html?id=${car.id}`;
+    const text = `Confira este veículo: ${capitalizeText(car.title)} por ${formatPrice(car.price)} ${detailsUrl}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+};
+
 window.renderAdminList = () => {
     const list = document.getElementById('adminCarList');
     if (!list) return;
 
-    if (!carsData || carsData.length === 0) {
-        list.innerHTML = '<div style="color: #666; padding: 40px; text-align: center;">Nenhum veículo cadastrado.</div>';
+    syncStockFilterOptions();
+    syncStockRangeBounds();
+    updateStockRangeLabels();
+
+    const filtered = applyAdminStockFilters(carsData || []);
+
+    const resultLabel = document.getElementById('stockResultsCount');
+    if (resultLabel) {
+        resultLabel.textContent = `${filtered.length} resultado(s) encontrado(s)`;
+    }
+
+    if (!filtered.length) {
+        list.innerHTML = '<div class="help-text" style="padding:20px; text-align:center;">Nenhum veículo encontrado com os filtros atuais.</div>';
         return;
     }
 
-    list.innerHTML = carsData.map(car => `
-        <div class="admin-car-item">
-            <div class="car-item-info">
-                <img src="${Array.isArray(car.images) && car.images.length > 0 ? car.images[0] : (car.image || 'logo.png')}" 
-                     class="car-item-thumb" 
-                     onerror="this.src='logo.png'">
-                <div>
-                    <div style="color:#fff; font-weight:bold; font-size: 1.1em;">${capitalizeText(car.title)}</div>
-                    <div style="color:#888; font-size:0.9em; margin-top: 5px;">
-                        ${car.year} | ${car.fuel || 'Flex'} <br>
-                        <div style="display:flex; gap:5px; margin-top:5px; flex-wrap:wrap;">
-                            <span style="background: #222; color: #4A90E2; padding: 2px 6px; border-radius: 4px; font-size: 0.75em; font-weight:bold;">Cód: ${car.code || 'N/A'}</span>
-                            <span style="background: #222; color: #d4af37; padding: 2px 6px; border-radius: 4px; font-size: 0.75em; font-weight:bold;">${car.createdBy || 'Sistema'}</span>
-                            ${car.condition ?
-            `<span style="background: #111; border: 1px solid #d4af37; color: #d4af37; padding: 1px 6px; border-radius: 4px; font-size: 0.75em; font-weight:bold; text-transform:uppercase;">${car.condition === 'novos' ? '0KM' : car.condition === 'seminovos' ? 'Seminovo' : 'Usado'}</span>` :
-            `<span style="background: #222; color: #666; padding: 1px 6px; border-radius: 4px; font-size: 0.7em; font-style:italic; border:1px dashed #444;">Pendente</span>`
-        }
+    list.classList.add('admin-stock-grid');
+
+    list.innerHTML = filtered.map(car => {
+        const statusLabel = car.condition === 'novos' ? 'Novo' : car.condition === 'seminovos' ? 'Seminovo' : car.condition === 'usados' ? 'Usado' : 'Pendente';
+        const statusClass = car.condition ? 'badge-system' : 'badge-pending';
+
+        return `
+            <article class="admin-car-item">
+                <img src="${Array.isArray(car.images) && car.images.length > 0 ? car.images[0] : (car.image || 'logo.png')}"
+                     class="car-item-thumb"
+                     onerror="this.src='logo.png'"
+                     alt="${car.title}">
+
+                <div class="car-item-content">
+                    <h3 class="car-item-title">${capitalizeText(car.title)}</h3>
+                    <div class="car-item-meta">${car.year || 'Ano N/A'} | ${car.fuel || 'Flex'}</div>
+                    <div class="car-item-badges">
+                        <span class="card-badge badge-system">Codigo: ${car.code || 'N/A'}</span>
+                        <span class="card-badge badge-system">${car.createdBy || 'Sistema'}</span>
+                        <span class="card-badge ${statusClass}">${statusLabel}</span>
+                    </div>
+                    <div class="car-item-price">${formatPrice(car.price)}</div>
+                    <div class="car-item-store-age">${formatStoreAge(car.createdAt)}</div>
+                    <div class="admin-car-actions">
+                        <div class="admin-car-actions-top">
+                            <button class="btn-primary" onclick="editCar(${car.id})">Editar</button>
+                            <button class="btn-secondary" onclick="window.open('detalhes.html?id=${car.id}', '_blank')">Visualizar</button>
+                            <button class="btn-secondary" onclick="duplicateCar(${car.id})">Duplicar</button>
                         </div>
+                        <button class="btn-secondary btn-full" onclick="generateCarSaleText(${car.id})">Gerar texto de marketing</button>
+                        <button class="btn-danger btn-danger-solid btn-full" onclick="deleteCar(${car.id})">Excluir</button>
                     </div>
                 </div>
-            </div>
-            
-            <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
-                <div style="color:#fff; font-weight:bold; font-size: 1.1em; text-align: right;" class="car-item-price">${formatPrice(car.price)}</div>
-                
-                <div class="admin-car-actions" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
-                    <button onclick="window.open('detalhes.html?id=${car.id}', '_blank')" 
-                            style="background:#333; color:white; border:1px solid #444; padding:10px; border-radius:4px; cursor:pointer; font-weight:600;">
-                        Visualizar
-                    </button>
-                    <button onclick="editCar(${car.id})" 
-                            style="background:#d4af37; color:black; border:none; padding:10px; border-radius:4px; cursor:pointer; font-weight:600;">
-                        Editar
-                    </button>
-                    <button onclick="deleteCar(${car.id})" 
-                            style="background:transparent; border:1px solid #ff3333; color:#ff3333; padding:10px; border-radius:4px; cursor:pointer; font-weight:600;">
-                        Excluir
-                    </button>
-                </div>
-            </div>
-        </div>
-    `).map(html => html.trim()).join('');
+            </article>
+        `;
+    }).join('');
 };
 
-// Delete Car Function (GLOBAL)
-window.deleteCar = async (id) => {
-    if (!confirm('Tem certeza que deseja excluir este veículo?')) return;
+window.deleteCar = async (id, options = {}) => {
+    if (!options.skipConfirm) {
+        if (typeof window.openDeleteCarModal === 'function') {
+            window.openDeleteCarModal(id);
+            return;
+        }
+        if (!confirm('Tem certeza que deseja excluir este veículo?')) return;
+    }
+
     try {
         await DB.deleteCar(id);
         await refreshAppData();
         if (window.renderAdminList) window.renderAdminList();
         showToast('Veículo excluído com sucesso!');
     } catch (e) {
-        showToast('Erro ao excluir');
+        showToast('Erro ao excluir veículo.');
     }
 };
 
-// Edit Car Function (GLOBAL)
-// Edit Car Function (GLOBAL)
-window.editCar = (id) => {
-    // 1. Switch to "Cadastro" tab immediately
-    if (typeof AdminTabs !== 'undefined') {
-        AdminTabs.open('cadastro');
-        setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
-    }
-    else if (window.AdminTabs) {
-        window.AdminTabs.open('cadastro');
-        setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+function setCarFormMode(mode) {
+    const submitBtn = document.getElementById('btnSaveVehicle');
+    const duplicateBtn = document.getElementById('duplicateCurrentVehicleBtn');
+
+    if (submitBtn) {
+        submitBtn.textContent = mode === 'edit' ? 'Salvar alterações' : 'Salvar Veículo';
     }
 
-    const car = carsData.find(c => c.id == id);
+    if (duplicateBtn) {
+        duplicateBtn.style.display = mode === 'edit' ? 'inline-flex' : 'none';
+    }
+}
+
+window.editCar = (id, options = {}) => {
+    if (window.AdminTabs) {
+        window.AdminTabs.open('cadastro');
+    }
+
+    const car = (carsData || []).find(c => c.id == id);
     if (!car) {
-        showToast('Veículo não encontrado');
+        showToast('Veículo não encontrado.');
         return;
     }
 
     const form = document.getElementById('addCarForm');
     if (!form) return;
+    const postSaveActions = document.getElementById('postSaveActions');
+    if (postSaveActions) postSaveActions.classList.remove('active');
+    const saveFeedback = document.getElementById('saveFeedback');
+    if (saveFeedback) {
+        saveFeedback.style.display = 'none';
+        saveFeedback.textContent = '';
+    }
 
-    // Reset global Fipe names to force fallback during edit save if not changed
-    window.selectedBrandName = "";
-    window.selectedModelName = "";
+    window.selectedBrandName = '';
+    window.selectedModelName = '';
 
-    // 2. Populate basic fields
-    form.price.value = car.price;
-    form.km.value = car.km.replace(' km', '');
+    if (form.price) form.price.value = car.price || '';
+    if (form.km) form.km.value = (car.km || '').replace(' km', '');
+    if (form.description) form.description.value = car.description || '';
+    if (form.engine) form.engine.value = car.engine || '';
+    if (form.transmission) form.transmission.value = car.transmission || '';
+    if (form.power) form.power.value = car.power || '';
+    if (form.color) form.color.value = car.color || '';
+    if (form.videoUrl) form.videoUrl.value = car.videoUrl || car.video || '';
+    if (form.condition) form.condition.value = car.condition || 'seminovos';
+    if (form.fuel) form.fuel.value = car.fuel || 'Flex';
+    if (form.addedDate) {
+        const createdAtDate = car.createdAt ? new Date(car.createdAt) : null;
+        form.addedDate.value = createdAtDate && !Number.isNaN(createdAtDate.getTime())
+            ? createdAtDate.toISOString().split('T')[0]
+            : '';
+    }
 
-    // 3. FIPE Selects Placeholder Strategy (AVOID BLOCKING 'REQUIRED' VALIDATION)
     const brandSel = document.getElementById('brandSelect');
     const modelSel = document.getElementById('modelSelect');
     const yearSel = document.getElementById('yearSelect');
     const verSel = document.getElementById('versionSelect');
 
     if (brandSel) {
-        // Set value to existing brand so 'required' validation passes
         brandSel.innerHTML = `<option value="${car.brand}">${car.brand}</option>` + brandSel.innerHTML;
         brandSel.value = car.brand;
+        brandSel.disabled = false;
     }
     if (modelSel) {
         modelSel.innerHTML = `<option value="${car.model}">${car.model}</option>`;
@@ -951,65 +1333,140 @@ window.editCar = (id) => {
         verSel.disabled = false;
     }
 
-    // 3.1 Description & Specs
-    if (form.description) form.description.value = car.description || '';
-    if (form.engine) form.engine.value = car.engine || '';
-    if (form.transmission) form.transmission.value = car.transmission || '';
-    if (form.power) form.power.value = car.power || '';
-    if (form.color) form.color.value = car.color || '';
-    if (form.condition) form.condition.value = car.condition || 'seminovos';
-
-    // 4. Pre-check checkboxes (Options & Lifestyle)
     document.querySelectorAll('input[name="carOptions"]').forEach(cb => {
-        cb.checked = car.options && car.options.includes(cb.value);
+        cb.checked = Array.isArray(car.options) && car.options.includes(cb.value);
     });
 
     document.querySelectorAll('input[name="lifestyle"]').forEach(cb => {
-        cb.checked = car.lifestyle && car.lifestyle.includes(cb.value);
+        cb.checked = Array.isArray(car.lifestyle) && car.lifestyle.includes(cb.value);
     });
 
-    // 5. Setup hidden ID for update mode
     let idInput = form.querySelector('[name="carId"]');
     if (!idInput) {
         idInput = document.createElement('input');
-        idInput.type = 'hidden'; idInput.name = 'carId';
+        idInput.type = 'hidden';
+        idInput.name = 'carId';
         form.appendChild(idInput);
     }
-    idInput.value = car.id;
 
-    // 5.1 Load Images into state for ordering
+    idInput.value = options.duplicate ? '' : String(car.id);
+
     const carImages = Array.isArray(car.images) && car.images.length > 0 ? car.images : (car.image ? [car.image] : []);
-
-    // Filter out potential broken URLs from the past
     window.carImagesState = carImages
-        .filter(url => url && typeof url === 'string' && url.length > 15 && !url.includes('undefined'))
+        .filter(url => typeof url === 'string' && url.length > 10)
         .map(url => ({ type: 'url', src: url }));
 
     if (typeof window.renderImagePreviews === 'function') window.renderImagePreviews();
 
-    // 6. Scroll visibility
+    if (options.duplicate) {
+        if (form.addedDate) form.addedDate.value = new Date().toISOString().split('T')[0];
+        setCarFormMode('new');
+        showToast('Dados carregados para duplicacao.');
+    } else {
+        setCarFormMode('edit');
+        showToast(`Editando: ${car.title}`);
+    }
+
+    if (typeof window.goToCarFormStep === 'function') {
+        window.goToCarFormStep(1);
+    }
+
     form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-    // 7. Update button text
-    const submitBtn = form.querySelector('button[type="submit"]');
-    if (submitBtn) submitBtn.innerText = 'SALVAR ALTERAÇÕES';
-
-    showToast(`Editando: ${car.title}`);
 };
 
-// ===== FEATURE: Admin Logic (FIPE + Options) =====
+window.duplicateCar = (id) => {
+    window.editCar(id, { duplicate: true });
+};
+
+function formatInteger(value) {
+    return new Intl.NumberFormat('pt-BR').format(Number(value || 0));
+}
+
+function getVehicleViewsRanking(cars, limit = 5) {
+    const analytics = readAnalytics();
+    const views = analytics.vehicleViews || {};
+
+    return Object.entries(views)
+        .map(([id, count]) => {
+            const car = (cars || []).find((item) => Number(item.id) === Number(id));
+            return {
+                id: Number(id),
+                count: Number(count || 0),
+                car
+            };
+        })
+        .filter(item => item.car)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, limit);
+}
+
+function getOldestStockVehicle(cars) {
+    return (cars || [])
+        .filter(item => item && item.createdAt)
+        .map(item => ({ car: item, date: new Date(item.createdAt) }))
+        .filter(item => !Number.isNaN(item.date.getTime()))
+        .sort((a, b) => a.date.getTime() - b.date.getTime())[0] || null;
+}
+
+window.renderAdminDashboard = () => {
+    const wrapper = document.getElementById('dashboardTopVehicles');
+    if (!wrapper) return;
+
+    const totalAccessEl = document.getElementById('dashTotalAccess');
+    const todayAccessEl = document.getElementById('dashTodayAccess');
+    const stockCountEl = document.getElementById('dashStockCount');
+    const topVehicleEl = document.getElementById('dashTopVehicle');
+    const insightsEl = document.getElementById('dashboardStockInsights');
+
+    const analytics = readAnalytics();
+    const today = getTodayKey();
+    const cars = Array.isArray(carsData) ? carsData : [];
+    const ranking = getVehicleViewsRanking(cars, 5);
+    const oldest = getOldestStockVehicle(cars);
+
+    if (totalAccessEl) totalAccessEl.textContent = formatInteger(analytics.totalAccess || 0);
+    if (todayAccessEl) todayAccessEl.textContent = formatInteger((analytics.dailyAccess || {})[today] || 0);
+    if (stockCountEl) stockCountEl.textContent = formatInteger(cars.length);
+    if (topVehicleEl) {
+        topVehicleEl.textContent = ranking.length ? capitalizeText(ranking[0].car.title || '-') : '-';
+    }
+
+    if (!ranking.length) {
+        wrapper.innerHTML = '<div class="help-text">Ainda não há dados de acessos em veículos nesta navegação.</div>';
+    } else {
+        wrapper.innerHTML = ranking.map((item, idx) => `
+            <article class="dashboard-list-item">
+                <div class="dashboard-list-title">${idx + 1}. ${capitalizeText(item.car.title || 'Veículo')}</div>
+                <div class="dashboard-list-meta">Visualizações: ${formatInteger(item.count)} | Ano: ${item.car.year || '-'}</div>
+            </article>
+        `).join('');
+    }
+
+    const mostViewed = ranking[0] || null;
+    const insights = [];
+    if (oldest) {
+        const date = oldest.date.toLocaleDateString('pt-BR');
+        insights.push(`<article class="dashboard-list-item"><div class="dashboard-list-title">Veículo há mais tempo no estoque</div><div class="dashboard-list-meta">${capitalizeText(oldest.car.title || 'Veículo')} | Desde ${date}</div></article>`);
+    }
+    if (mostViewed) {
+        insights.push(`<article class="dashboard-list-item"><div class="dashboard-list-title">Veículo mais clicado</div><div class="dashboard-list-meta">${capitalizeText(mostViewed.car.title || 'Veículo')} | ${formatInteger(mostViewed.count)} acessos</div></article>`);
+    }
+    if (!insights.length) {
+        insights.push('<div class="help-text">Sem dados suficientes para gerar insights.</div>');
+    }
+    if (insightsEl) insightsEl.innerHTML = insights.join('');
+};
+
 function initAdmin() {
     const form = document.getElementById('addCarForm');
     const list = document.getElementById('adminCarList');
     if (!form || !list) return;
 
-    // FIPE Elements
     const brandSelect = document.getElementById('brandSelect');
     const modelSelect = document.getElementById('modelSelect');
     const yearSelect = document.getElementById('yearSelect');
-    const versionSelect = document.getElementById('versionSelect'); // We might use this differently or hide if redundant
+    const versionSelect = document.getElementById('versionSelect');
 
-    // Logout Logic
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', (e) => {
@@ -1019,100 +1476,240 @@ function initAdmin() {
         });
     }
 
-    // State (Global within script.js to allow editCar resets)
     window.selectedBrandName = '';
     window.selectedModelName = '';
+    window.carImagesState = [];
+    window.lastSavedCarId = null;
 
-    // Manual Entry States (Exposed to window for scope accessibility in Parser)
-    window.isBrandManual = false;
-    window.isModelManual = false;
-    window.isYearManual = false;
-
-    // Image Order State
-    window.carImagesState = []; // Array of { type: 'file'|'url', src: string|File }
-
-    // FIPE & Options Essentials
     const FIPE_BASE = 'https://parallelum.com.br/fipe/api/v1';
     let currentVehicleType = 'carros';
+    const selectCache = {
+        brand: [],
+        model: [],
+        year: [],
+        version: []
+    };
+    const selectsMap = {
+        brand: brandSelect,
+        model: modelSelect,
+        year: yearSelect,
+        version: versionSelect
+    };
+
+    function renderSelectWithFilter(type, placeholder) {
+        const select = selectsMap[type];
+        if (!select) return;
+
+        const options = selectCache[type] || [];
+        const currentValue = select.value;
+
+        select.innerHTML = `<option value="">${placeholder}</option>` + options.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('');
+        if (options.some(opt => String(opt.value) === String(currentValue))) {
+            select.value = currentValue;
+        }
+    }
+
+    function setSelectCache(type, options, placeholder) {
+        selectCache[type] = Array.isArray(options) ? options : [];
+        renderSelectWithFilter(type, placeholder);
+    }
+
+    function resetDependentSelects() {
+        setSelectCache('model', [], 'Selecione a marca primeiro');
+        setSelectCache('year', [], 'Selecione o modelo primeiro');
+        setSelectCache('version', [], 'Selecione o ano');
+        modelSelect.disabled = true;
+        yearSelect.disabled = true;
+        versionSelect.disabled = true;
+    }
+
     const optionsContainer = document.getElementById('optionsContainer');
     const newOptionInput = document.getElementById('newOptionInput');
     const btnAddOption = document.getElementById('btnAddOption');
 
-    window.toggleManualBrand = () => {
-        window.isBrandManual = !window.isBrandManual;
-        const select = document.getElementById('brandSelect');
-        const input = document.getElementById('brandManualInput');
+    const duplicateCurrentVehicleBtn = document.getElementById('duplicateCurrentVehicleBtn');
+    const postSaveActions = document.getElementById('postSaveActions');
+    const shareSavedBtn = document.getElementById('btnShareSavedVehicle');
+    const generateSavedTextBtn = document.getElementById('btnGenerateSavedText');
 
-        if (window.isBrandManual) {
-            select.style.display = 'none';
-            select.required = false;
-            input.style.display = 'block';
-            input.required = true;
-            // Also force model to manual if brand is manual
-            if (!window.isModelManual) window.toggleManualModel();
-        } else {
-            select.style.display = 'block';
-            select.required = true;
-            input.style.display = 'none';
-            input.required = false;
+    if (shareSavedBtn) {
+        shareSavedBtn.addEventListener('click', () => {
+            if (!window.lastSavedCarId) {
+                showToast('Salve um veículo para compartilhar.');
+                return;
+            }
+            window.shareCarFromAdmin(window.lastSavedCarId);
+        });
+    }
+
+    if (generateSavedTextBtn) {
+        generateSavedTextBtn.addEventListener('click', async () => {
+            if (!window.lastSavedCarId) {
+                showToast('Salve um veículo para gerar texto.');
+                return;
+            }
+            await window.generateCarSaleText(window.lastSavedCarId);
+        });
+    }
+
+    if (duplicateCurrentVehicleBtn) {
+        duplicateCurrentVehicleBtn.addEventListener('click', () => {
+            const idInput = form.querySelector('[name="carId"]');
+            const editingId = idInput ? idInput.value : '';
+            if (!editingId) {
+                showToast('Nenhum veículo em edição para duplicar.');
+                return;
+            }
+            window.duplicateCar(Number(editingId));
+        });
+    }
+
+    function setSaveFeedback(message, isError = false) {
+        const feedbackEl = document.getElementById('saveFeedback');
+        if (!feedbackEl) return;
+        if (window.adminSaveFeedbackTimer) {
+            clearTimeout(window.adminSaveFeedbackTimer);
+            window.adminSaveFeedbackTimer = null;
         }
+        if (!message) {
+            feedbackEl.textContent = '';
+            feedbackEl.style.display = 'none';
+            return;
+        }
+
+        feedbackEl.textContent = message;
+        feedbackEl.style.display = 'block';
+        feedbackEl.style.color = isError ? '#b42318' : '#117a3f';
+
+        window.adminSaveFeedbackTimer = setTimeout(() => {
+            feedbackEl.style.display = 'none';
+        }, 5000);
+    }
+
+    (function bindDeleteCarModal() {
+        const modal = document.getElementById('deleteCarModal');
+        const cancelBtn = document.getElementById('deleteCarModalCancel');
+        const confirmBtn = document.getElementById('deleteCarModalConfirm');
+        let pendingId = null;
+
+        if (!modal || !confirmBtn || !cancelBtn) {
+            window.openDeleteCarModal = null;
+            return;
+        }
+
+        const close = () => {
+            modal.classList.remove('active');
+            modal.setAttribute('aria-hidden', 'true');
+            pendingId = null;
+        };
+
+        window.openDeleteCarModal = (id) => {
+            pendingId = Number(id);
+            modal.classList.add('active');
+            modal.setAttribute('aria-hidden', 'false');
+        };
+
+        cancelBtn.addEventListener('click', close);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) close();
+        });
+
+        confirmBtn.addEventListener('click', async () => {
+            if (!pendingId && pendingId !== 0) return;
+            const targetId = pendingId;
+            close();
+            await window.deleteCar(targetId, { skipConfirm: true });
+        });
+    })();
+
+    function getStepElements() {
+        return Array.from(document.querySelectorAll('.admin-step'));
+    }
+
+    function refreshStepperUI() {
+        const currentStep = window.adminStepState.current;
+        const steps = getStepElements();
+        steps.forEach((stepEl) => {
+            const stepNumber = Number(stepEl.dataset.step);
+            stepEl.classList.toggle('active', stepNumber === currentStep);
+        });
+
+        document.querySelectorAll('[data-step-dot]').forEach(dot => {
+            dot.classList.toggle('active', Number(dot.dataset.stepDot) === currentStep);
+        });
+
+        const prevBtn = document.getElementById('btnStepPrev');
+        const nextBtn = document.getElementById('btnStepNext');
+        const saveBtn = document.getElementById('btnSaveVehicle');
+
+        if (prevBtn) prevBtn.disabled = currentStep === 1;
+        if (nextBtn) nextBtn.style.display = currentStep === window.adminStepState.total ? 'none' : 'inline-flex';
+        if (saveBtn) saveBtn.style.display = 'inline-flex';
+    }
+
+    function validateStep(step) {
+        if (step === 1) {
+            const brandOk = !!brandSelect.value;
+            const modelOk = !!modelSelect.value;
+            const yearOk = !!yearSelect.value;
+            const versionOk = !!versionSelect.value;
+
+            if (!brandOk || !modelOk || !yearOk || !versionOk) {
+                showToast('Preencha todos os dados do veículo antes de continuar.');
+                return false;
+            }
+            return true;
+        }
+
+        if (step === 2) {
+            const price = form.price ? String(form.price.value).trim() : '';
+            const km = form.km ? String(form.km.value).trim() : '';
+            const condition = form.condition ? String(form.condition.value).trim() : '';
+
+            if (!price || Number(price) <= 0) {
+                showToast('Informe um preco valido para continuar.');
+                return false;
+            }
+
+            if (!km) {
+                showToast('Informe a quilometragem para continuar.');
+                return false;
+            }
+
+            if (!condition) {
+                showToast('Informe a classificacao para continuar.');
+                return false;
+            }
+
+            return true;
+        }
+
+        return true;
+    }
+
+    window.goToCarFormStep = (stepNumber) => {
+        const nextStep = Math.min(window.adminStepState.total, Math.max(1, Number(stepNumber)));
+        window.adminStepState.current = nextStep;
+        refreshStepperUI();
     };
 
-    window.toggleManualModel = () => {
-        window.isModelManual = !window.isModelManual;
-        const select = document.getElementById('modelSelect');
-        const input = document.getElementById('modelManualInput');
+    const stepPrevBtn = document.getElementById('btnStepPrev');
+    const stepNextBtn = document.getElementById('btnStepNext');
 
-        if (window.isModelManual) {
-            select.style.display = 'none';
-            select.required = false;
-            input.style.display = 'block';
-            input.required = true;
-            // NEW: Also enable manual year entry automatically when model is manual
-            if (!window.isYearManual) window.toggleManualYear();
-        } else {
-            select.style.display = 'block';
-            select.required = true;
-            input.style.display = 'none';
-            input.required = false;
-        }
-    };
+    if (stepPrevBtn) {
+        stepPrevBtn.addEventListener('click', () => {
+            window.goToCarFormStep(window.adminStepState.current - 1);
+        });
+    }
 
-    window.toggleManualYear = () => {
-        window.isYearManual = !window.isYearManual;
-        const select = document.getElementById('yearSelect');
-        const input = document.getElementById('yearManualInput');
+    if (stepNextBtn) {
+        stepNextBtn.addEventListener('click', () => {
+            if (!validateStep(window.adminStepState.current)) return;
+            window.goToCarFormStep(window.adminStepState.current + 1);
+        });
+    }
 
-        if (window.isYearManual) {
-            select.style.display = 'none';
-            select.required = false;
-            input.style.display = 'block';
-            input.required = true;
-        } else {
-            select.style.display = 'block';
-            select.required = true;
-            input.style.display = 'none';
-            input.required = false;
-        }
-    };
-
-    window.toggleManualVersion = () => {
-        window.isVersionManual = !window.isVersionManual;
-        const select = document.getElementById('versionSelect');
-        const input = document.getElementById('versionManualInput');
-
-        if (window.isVersionManual) {
-            select.style.display = 'none';
-            select.required = false;
-            input.style.display = 'block';
-            input.required = true;
-        } else {
-            select.style.display = 'block';
-            select.required = true;
-            input.style.display = 'none';
-            input.required = false;
-        }
-    };
+    window.goToCarFormStep(1);
 
     window.toggleVehicleType = () => {
         const select = document.getElementById('vehicleTypeSelect');
@@ -1122,82 +1719,60 @@ function initAdmin() {
         }
     };
 
-    // --- Image Previews & Ordering (DRAG & DROP) ---
     const imageInput = document.getElementById('carImageFile');
     const previewContainer = document.getElementById('imagePreviews');
-    let draggedItemIndex = null; // Track dragged item
+    let draggedItemIndex = null;
 
     window.renderImagePreviews = () => {
         if (!previewContainer) return;
+
         previewContainer.innerHTML = '';
 
         window.carImagesState.forEach((imgObj, index) => {
             const wrapper = document.createElement('div');
-            // Enable Drag
             wrapper.draggable = true;
-            wrapper.dataset.index = index;
-            wrapper.style.cssText = 'position:relative; flex-shrink:0; width:100px; height:80px; border:1px solid #333; border-radius:4px; overflow:hidden; background:#222; cursor:grab; transition: all 0.2s ease;';
+            wrapper.dataset.index = String(index);
+            wrapper.style.cssText = 'position:relative; flex-shrink:0; width:100px; height:80px; border:1px solid #e0e0e0; border-radius:6px; overflow:hidden; background:#fff; cursor:grab;';
 
             const displaySrc = imgObj.type === 'file' ? URL.createObjectURL(imgObj.src) : imgObj.src;
 
             wrapper.innerHTML = `
-                <img src="${displaySrc}" style="width:100%; height:100%; object-fit:cover; pointer-events:none;" onerror="this.onerror=null; this.src='https://via.placeholder.com/100x80?text=Erro'; this.style.opacity='0.5';">
-                <div style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.7); display:flex; justify-content:flex-end; padding:2px;">
-                    <button type="button" onclick="window.removeImage(${index})" style="background:none; border:none; color:#ff4444; cursor:pointer; font-size:12px; font-weight:bold; padding:0 5px;">✕</button>
+                <img src="${displaySrc}" style="width:100%; height:100%; object-fit:cover; pointer-events:none;" onerror="this.onerror=null; this.src='logo.png'; this.style.opacity='0.5';">
+                <div style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.65); display:flex; justify-content:flex-end; padding:2px;">
+                    <button type="button" onclick="window.removeImage(${index})" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:12px; font-weight:500; padding:0 4px;">x</button>
                 </div>
-                ${index === 0 ? '<div style="position:absolute; top:2px; left:2px; background:#d4af37; color:black; font-size:8px; font-weight:bold; padding:2px; border-radius:2px;">CAPA</div>' : ''}
+                ${index === 0 ? '<div style="position:absolute; top:3px; left:3px; background:#FF9500; color:#fff; font-size:8px; font-weight:700; padding:2px 4px; border-radius:3px;">CAPA</div>' : ''}
             `;
 
-            // Drag Events
             wrapper.addEventListener('dragstart', (e) => {
                 draggedItemIndex = index;
                 e.dataTransfer.effectAllowed = 'move';
                 wrapper.style.opacity = '0.5';
-                wrapper.style.borderColor = '#d4af37';
+                wrapper.style.borderColor = '#FF9500';
             });
 
             wrapper.addEventListener('dragend', () => {
                 wrapper.style.opacity = '1';
-                wrapper.style.borderColor = '#333';
+                wrapper.style.borderColor = '#e0e0e0';
                 draggedItemIndex = null;
             });
 
             wrapper.addEventListener('dragover', (e) => {
-                e.preventDefault(); // Necessary for drop
-                e.dataTransfer.dropEffect = 'move';
-                wrapper.style.transform = 'scale(1.05)';
-            });
-
-            wrapper.addEventListener('dragleave', () => {
-                wrapper.style.transform = 'scale(1)';
+                e.preventDefault();
             });
 
             wrapper.addEventListener('drop', (e) => {
                 e.preventDefault();
-                wrapper.style.transform = 'scale(1)';
+                if (draggedItemIndex === null || draggedItemIndex === index) return;
 
-                if (draggedItemIndex !== null && draggedItemIndex !== index) {
-                    // Reorder Array
-                    const movedItem = window.carImagesState[draggedItemIndex];
-                    window.carImagesState.splice(draggedItemIndex, 1);
-                    window.carImagesState.splice(index, 0, movedItem);
-
-                    // Re-render
-                    window.renderImagePreviews();
-                }
+                const movedItem = window.carImagesState[draggedItemIndex];
+                window.carImagesState.splice(draggedItemIndex, 1);
+                window.carImagesState.splice(index, 0, movedItem);
+                window.renderImagePreviews();
             });
 
             previewContainer.appendChild(wrapper);
         });
-    };
-
-    window.moveImage = (index, direction) => {
-        const newIndex = index + direction;
-        if (newIndex < 0 || newIndex >= window.carImagesState.length) return;
-        const temp = window.carImagesState[index];
-        window.carImagesState[index] = window.carImagesState[newIndex];
-        window.carImagesState[newIndex] = temp;
-        window.renderImagePreviews();
     };
 
     window.removeImage = (index) => {
@@ -1207,272 +1782,175 @@ function initAdmin() {
 
     if (imageInput) {
         imageInput.addEventListener('change', async (e) => {
-            const files = Array.from(e.target.files);
+            const files = Array.from(e.target.files || []);
             if (!files.length) return;
 
-            console.log("Iniciando imagens...");
-
-            // Bloquear botão de salvar durante processamento para segurança
-            const submitBtn = document.querySelector('button[type="submit"]');
+            const submitBtn = document.getElementById('btnSaveVehicle');
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.style.opacity = '0.5';
-                submitBtn.innerText = 'PROCESSANDO FOTOS...';
+                submitBtn.textContent = 'Processando fotos...';
             }
 
             for (const file of files) {
                 try {
-                    // Usar o novo utilitário global de conversão
                     const processedFile = await convertHeicFile(file);
-
-                    if (processedFile !== file) {
-                        showToast(`✅ Foto do iPhone convertida!`, 1500);
-                    }
-
+                    if (processedFile !== file) showToast('Foto do iPhone convertida!');
                     window.carImagesState.push({ type: 'file', src: processedFile });
                     window.renderImagePreviews();
-
                 } catch (err) {
-                    console.error("[Upload] Erro ao processar arquivo:", file.name, err);
-                    showToast(`❌ Erro no arquivo: ${file.name}.`);
-                    if (!file.name.toLowerCase().endsWith('.heic')) {
-                        window.carImagesState.push({ type: 'file', src: file });
-                        window.renderImagePreviews();
-                    }
+                    console.error('[Upload] Erro no arquivo:', file.name, err);
+                    showToast(`Erro no arquivo: ${file.name}.`);
                 }
             }
 
-            // Restaurar botão
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.style.opacity = '1';
-                submitBtn.innerText = 'SALVAR VEÍCULO';
+                setCarFormMode(form.querySelector('[name="carId"]').value ? 'edit' : 'new');
             }
+
             imageInput.value = '';
-            console.log("[Google-Engine] Frequência de processamento finalizada.");
         });
     }
 
-    // --- Options System Logic ---
     function getStoredOptions() {
-        // Reset cache logic for consistency
         let stored = [];
         try {
-            const temp = JSON.parse(localStorage.getItem('souza_options'));
-            if (temp && temp.length < 20) {
-                localStorage.removeItem('souza_options');
-            } else {
-                stored = temp;
-            }
-        } catch (e) { localStorage.removeItem('souza_options'); }
-
-        // Default seed - Lista estendida
-        const defaults = [
-            "Ar Condicionado", "Ar Condicionado Digital", "Direção Hidráulica", "Direção Elétrica",
-            "Vidro Elétrico", "Trava Elétrica", "Alarme", "Airbag Duplo", "Airbag Lateral",
-            "Freios ABS", "Freio de Mão Eletrônico", "Controle de Estabilidade", "Controle de Tração",
-            "Som Multimídia", "Bluetooth", "USB", "GPS Integrado", "CarPlay / Android Auto",
-            "Câmera de Ré", "Sensor de Estacionamento", "Sensor de Estacionamento Dianteiro", "Câmera 360",
-            "Bancos de Couro", "Ajuste Elétrico dos Bancos", "Aquecimento dos Bancos",
-            "Teto Solar", "Teto Panorâmico",
-            "Rodas de Liga Leve", "Rodas de Liga Leve Diamantadas", "Faróis de LED", "Faróis Full LED", "Faróis de Xenon", "Farol de Milha",
-            "Computador de Bordo", "Piloto Automático", "Piloto Automático Adaptativo (ACC)", "Painel Digital (Virtual Cockpit)",
-            "Chave Presencial", "Partida Start/Stop", "Partida Remota", "Carregador por Indução",
-            "Retrovisores Elétricos", "Rebatimento de Retrovisores", "Assistente de Permanência em Faixa",
-            "Sensor de Chuva", "Sensor de Luz", "Volante Multifuncional", "Paddle Shifts",
-            "Alerta de Ponto Cego", "Assistente de Partida em Rampa (Auto Hold)", "Iluminação Interna em LED"
-        ].map(opt => opt.charAt(0).toUpperCase() + opt.slice(1).toLowerCase().replace(/\s([a-z])/g, (match) => match.toUpperCase()));
-
-        if (!stored || !Array.isArray(stored)) {
+            stored = JSON.parse(localStorage.getItem('souza_options') || '[]');
+        } catch (e) {
             stored = [];
         }
 
-        // Merge defaults into stored to ensure new defaults appear
-        // Using Set to avoid duplicates
-        const merged = [...new Set([...defaults, ...stored])].sort();
+        const defaults = [
+            'Ar Condicionado', 'Ar Condicionado Digital', 'Direcao Hidraulica', 'Direcao Eletrica',
+            'Vidro Eletrico', 'Trava Eletrica', 'Alarme', 'Airbag Duplo', 'Airbag Lateral',
+            'Freios ABS', 'Freio de Mao Eletronico', 'Controle de Estabilidade', 'Controle de Tracao',
+            'Som Multimidia', 'Bluetooth', 'USB', 'GPS Integrado', 'CarPlay / Android Auto',
+            'Camera de Re', 'Sensor de Estacionamento', 'Sensor Dianteiro', 'Camera 360',
+            'Bancos de Couro', 'Ajuste Eletrico dos Bancos', 'Aquecimento dos Bancos',
+            'Teto Solar', 'Teto Panoramico', 'Rodas de Liga Leve', 'Farois de LED', 'Farol de Milha',
+            'Computador de Bordo', 'Piloto Automatico', 'Painel Digital', 'Chave Presencial',
+            'Partida Start/Stop', 'Partida Remota', 'Carregador por Inducao', 'Retrovisores Eletricos',
+            'Assistente de Faixa', 'Sensor de Chuva', 'Sensor de Luz', 'Volante Multifuncional',
+            'Paddle Shifts', 'Alerta de Ponto Cego', 'Assistente de Partida em Rampa'
+        ];
 
+        const merged = [...new Set([...defaults, ...stored])].sort((a, b) => a.localeCompare(b));
         localStorage.setItem('souza_options', JSON.stringify(merged));
         return merged;
     }
 
     window.filterOptions = () => {
-        const query = document.getElementById('searchOptionInput').value.toLowerCase();
-        const items = optionsContainer.querySelectorAll('label');
-        items.forEach(item => {
-            const text = item.innerText.toLowerCase();
-            item.style.display = text.includes(query) ? 'inline-flex' : 'none';
+        const query = (document.getElementById('searchOptionInput').value || '').toLowerCase();
+        optionsContainer.querySelectorAll('.option-item').forEach((label) => {
+            const text = label.innerText.toLowerCase();
+            label.style.display = text.includes(query) ? 'inline-flex' : 'none';
         });
+    };
+
+    window.updateOptionsSummary = () => {
+        // Summary removed intentionally by new admin layout.
     };
 
     function renderOptions() {
         const options = getStoredOptions();
-
-        // 1. Create Summary Container if not exists
-        let summaryDiv = document.getElementById('optionsSummary');
-        if (!summaryDiv) {
-            summaryDiv = document.createElement('div');
-            summaryDiv.id = 'optionsSummary';
-            summaryDiv.style.cssText = 'margin-bottom: 15px; padding: 10px; background: #1a1a1a; border: 1px dashed #444; border-radius: 6px; min-height: 40px; display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.85em; color: #aaa;';
-            summaryDiv.innerHTML = '<span style="width:100%; font-style:italic;">Nenhum opcional selecionado...</span>';
-            // Insert BEFORE the grid container
-            optionsContainer.parentNode.insertBefore(summaryDiv, optionsContainer);
-        }
-
-        // 2. Render Checkboxes
         optionsContainer.innerHTML = options.map(opt => `
-            <label style="display: inline-flex; align-items: center; gap: 5px; background: #222; padding: 5px 10px; border-radius: 4px; cursor: pointer; border: 1px solid #333;">
-                <input type="checkbox" name="carOptions" value="${opt}" onchange="updateOptionsSummary()">
-                <span style="color: #ddd; font-size: 0.9em;">${opt}</span>
+            <label class="option-item">
+                <input type="checkbox" name="carOptions" value="${opt}">
+                <span>${opt}</span>
             </label>
         `).join('');
 
-        // 3. Helper to Update Summary
-        window.updateOptionsSummary = () => {
-            const checked = Array.from(document.querySelectorAll('input[name="carOptions"]:checked')).map(cb => cb.value);
-            if (checked.length === 0) {
-                summaryDiv.innerHTML = '<span style="width:100%; font-style:italic;">Nenhum opcional selecionado...</span>';
-            } else {
-                summaryDiv.innerHTML = checked.map(val => `
-                    <span style="background: #d4af3720; color: #d4af37; border: 1px solid #d4af3750; padding: 2px 8px; border-radius: 12px; display: flex; align-items: center; gap: 5px;">
-                        ${val} <button type="button" onclick="uncheckOption('${val}')" style="background:none; border:none; color:#d4af37; font-weight:bold; cursor:pointer; font-size:1.1em; line-height:1;">×</button>
-                    </span>
-                `).join('');
-            }
-        };
-
-        window.uncheckOption = (val) => {
-            const cb = document.querySelector(`input[name="carOptions"][value="${val}"]`);
-            if (cb) {
-                cb.checked = false;
-                updateOptionsSummary();
-            }
-        };
-
-        // Re-apply filter if someone is typing
         window.filterOptions();
-        window.updateOptionsSummary(); // Init
     }
 
-
-
     function addNewOption() {
-        const val = newOptionInput.value.trim();
+        const val = (newOptionInput.value || '').trim();
         if (!val) return;
 
-        // Check duplicates (case insensitive)
         const current = getStoredOptions();
         if (current.some(o => o.toLowerCase() === val.toLowerCase())) {
-            alert('Este opcional já existe!');
+            alert('Este opcional ja existe.');
             return;
         }
 
         current.push(val);
-        // Sort alphabetically
-        current.sort();
-
+        current.sort((a, b) => a.localeCompare(b));
         localStorage.setItem('souza_options', JSON.stringify(current));
         renderOptions();
         newOptionInput.value = '';
 
-        // Auto-check the newly created option
         setTimeout(() => {
-            const inputs = document.getElementsByName('carOptions');
-            for (let inp of inputs) {
-                if (inp.value === val) inp.checked = true;
-            }
-        }, 50);
+            const match = document.querySelector(`input[name="carOptions"][value="${val}"]`);
+            if (match) match.checked = true;
+        }, 30);
     }
 
-    btnAddOption.addEventListener('click', addNewOption);
-    newOptionInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            addNewOption();
-        }
-    });
+    if (btnAddOption) btnAddOption.addEventListener('click', addNewOption);
+    if (newOptionInput) {
+        newOptionInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addNewOption();
+            }
+        });
+    }
 
-    // --- FIPE Logic ---
-    // --- FIPE Logic ---
     async function loadBrands() {
         try {
-            brandSelect.innerHTML = '<option value="">Carregando...</option>';
+            setSelectCache('brand', [], 'Carregando...');
             const res = await fetch(`${FIPE_BASE}/${currentVehicleType}/marcas`);
             if (!res.ok) throw new Error('API Error');
             let brands = await res.json();
 
-            // FORÇA: Renomear Chevrolet para GM - Chevrolet para facilitar busca
             brands = brands.map(b => {
-                if (b.nome.toUpperCase() === 'CHEVROLET') {
+                if (b.nome && b.nome.toUpperCase() === 'CHEVROLET') {
                     return { ...b, nome: 'GM - Chevrolet' };
                 }
                 return b;
             });
 
-            // Merge with Custom Persistent Brands
-            const customBrandsStored = JSON.parse(localStorage.getItem('souza_custom_brands') || '[]');
-            const customBrandsObjects = customBrandsStored.map(n => ({ codigo: 'custom', nome: n }));
+            const allBrands = [...brands].sort((a, b) => a.nome.localeCompare(b.nome));
 
-            let allBrands = [...customBrandsObjects, ...brands];
-
-            // Sort Alphabetically
-            allBrands.sort((a, b) => a.nome.localeCompare(b.nome));
-
-            brandSelect.innerHTML = '<option value="">Selecione a Marca</option>' +
-                allBrands.map(b => `<option value="${b.codigo}">${b.nome}</option>`).join('');
+            setSelectCache('brand', allBrands.map(b => ({ value: b.codigo, label: b.nome })), 'Selecione a Marca');
             brandSelect.disabled = false;
+            resetDependentSelects();
         } catch (error) {
-            console.warn("FIPE API Error, using fallback:", error);
+            console.warn('FIPE API indisponivel, fallback local.', error);
             const fallbackBrands = [
-                { codigo: '23', nome: 'GM - Chevrolet' },
-                { codigo: '21', nome: 'Fiat' },
-                { codigo: '59', nome: 'Volkswagen' },
-                { codigo: '22', nome: 'Ford' },
-                { codigo: '26', nome: 'Hyundai' },
-                { codigo: '25', nome: 'Honda' },
-                { codigo: '56', nome: 'Toyota' },
-                { codigo: '29', nome: 'Jeep' },
-                { codigo: '13', nome: 'BMW' },
-                { codigo: '39', nome: 'Mercedes-Benz' },
-                { codigo: '7', nome: 'Audi' }
+                { codigo: '23', nome: 'GM - Chevrolet' }, { codigo: '21', nome: 'Fiat' },
+                { codigo: '59', nome: 'Volkswagen' }, { codigo: '22', nome: 'Ford' },
+                { codigo: '26', nome: 'Hyundai' }, { codigo: '25', nome: 'Honda' },
+                { codigo: '56', nome: 'Toyota' }, { codigo: '29', nome: 'Jeep' },
+                { codigo: '13', nome: 'BMW' }, { codigo: '39', nome: 'Mercedes-Benz' }
             ];
 
-            const customBrandsStored = JSON.parse(localStorage.getItem('souza_custom_brands') || '[]');
-            const allBrands = [...customBrandsStored.map(n => ({ codigo: 'custom', nome: n })), ...fallbackBrands];
-            allBrands.sort((a, b) => a.nome.localeCompare(b.nome));
-
-            brandSelect.innerHTML = '<option value="">Selecione a Marca (Servidor Offline)</option>' +
-                allBrands.map(b => `<option value="${b.codigo}">${b.nome}</option>`).join('');
+            setSelectCache('brand', fallbackBrands.map(b => ({ value: b.codigo, label: b.nome })), 'Selecione a Marca');
             brandSelect.disabled = false;
+            resetDependentSelects();
         }
     }
 
     brandSelect.addEventListener('change', async () => {
         const brandCode = brandSelect.value;
         const vehicleType = document.getElementById('vehicleTypeSelect') ? document.getElementById('vehicleTypeSelect').value : 'carros';
-        window.selectedBrandName = brandSelect.options[brandSelect.selectedIndex].text;
+        window.selectedBrandName = brandSelect.options[brandSelect.selectedIndex] ? brandSelect.options[brandSelect.selectedIndex].text : '';
 
-        modelSelect.innerHTML = '<option value="">Carregando...</option>';
-        yearSelect.innerHTML = '<option value="">Selecione um modelo primeiro</option>';
-        versionSelect.innerHTML = '<option value="">Selecione um ano primeiro</option>';
+        setSelectCache('model', [], 'Carregando...');
         modelSelect.disabled = true;
+        setSelectCache('year', [], 'Selecione o modelo primeiro');
+        setSelectCache('version', [], 'Selecione o ano');
         yearSelect.disabled = true;
         versionSelect.disabled = true;
 
         if (!brandCode) return;
 
-        // NEW: If custom brand, skip FIPE and go to manual model
-        if (brandCode === 'custom') {
-            if (!isModelManual) window.toggleManualModel();
-            return;
-        }
-
         try {
             const res = await fetch(`${FIPE_BASE}/${vehicleType}/marcas/${brandCode}/modelos`);
-            const data = await res.json(); // { modelos: [], anos: [] }
-
-            // Populate models
-            modelSelect.innerHTML = '<option value="">Selecione o Modelo</option>' +
-                data.modelos.map(m => `<option value="${m.codigo}">${m.nome}</option>`).join('');
+            const data = await res.json();
+            const modelOptions = Array.isArray(data?.modelos)
+                ? data.modelos.map(m => ({ value: m.codigo, label: m.nome }))
+                : [];
+            setSelectCache('model', modelOptions, 'Selecione o Modelo');
             modelSelect.disabled = false;
         } catch (error) {
             console.error(error);
@@ -1483,10 +1961,12 @@ function initAdmin() {
         const brandCode = brandSelect.value;
         const modelCode = modelSelect.value;
         const vehicleType = document.getElementById('vehicleTypeSelect') ? document.getElementById('vehicleTypeSelect').value : 'carros';
-        window.selectedModelName = modelSelect.options[modelSelect.selectedIndex].text;
+        window.selectedModelName = modelSelect.options[modelSelect.selectedIndex] ? modelSelect.options[modelSelect.selectedIndex].text : '';
 
-        yearSelect.innerHTML = '<option value="">Carregando...</option>';
+        setSelectCache('year', [], 'Carregando...');
         yearSelect.disabled = true;
+        setSelectCache('version', [], 'Selecione o ano');
+        versionSelect.disabled = true;
 
         if (!modelCode) return;
 
@@ -1494,8 +1974,10 @@ function initAdmin() {
             const res = await fetch(`${FIPE_BASE}/${vehicleType}/marcas/${brandCode}/modelos/${modelCode}/anos`);
             const years = await res.json();
 
-            yearSelect.innerHTML = '<option value="">Selecione o Ano</option>' +
-                years.map(y => `<option value="${y.codigo}">${y.nome}</option>`).join('');
+            const yearOptions = Array.isArray(years)
+                ? years.map(y => ({ value: y.codigo, label: y.nome }))
+                : [];
+            setSelectCache('year', yearOptions, 'Selecione o Ano');
             yearSelect.disabled = false;
         } catch (error) {
             console.error(error);
@@ -1503,8 +1985,6 @@ function initAdmin() {
     });
 
     yearSelect.addEventListener('change', async () => {
-        // When year is selected, we technically have the specific version in FIPE terms
-        // We can fetch data to get price reference
         const brandCode = brandSelect.value;
         const modelCode = modelSelect.value;
         const yearCode = yearSelect.value;
@@ -1516,176 +1996,137 @@ function initAdmin() {
             const res = await fetch(`${FIPE_BASE}/${vehicleType}/marcas/${brandCode}/modelos/${modelCode}/anos/${yearCode}`);
             const details = await res.json();
 
-            // Auto-fill price suggestion
-            // FIPE Price string: "R$ 100.000,00"
-            const fipePrice = details.Valor.replace('R$ ', '').replace('.', '').replace(',', '.');
-            form.price.value = parseFloat(fipePrice);
+            const fipePrice = details.Valor.replace('R$ ', '').replace(/\./g, '').replace(',', '.');
+            if (form.price && (!form.price.value || Number(form.price.value) === 0)) {
+                form.price.value = parseFloat(fipePrice);
+            }
 
-            // Use versionSelect to show the 'Fipe Name' as a confirmation
-            versionSelect.innerHTML = `<option value="${details.Modelo}" selected>${details.Modelo}</option>`;
+            setSelectCache('version', [{ value: details.Modelo, label: details.Modelo }], 'Selecione a versao');
             versionSelect.disabled = false;
-
         } catch (error) {
             console.error(error);
         }
     });
 
-
-    // --- Render List Logic ---
-    renderAdminList();
-
-    // --- Form Submit Logic ---
-    form.addEventListener('submit', async (e) => {
+    async function saveVehicleForm(e) {
         e.preventDefault();
+        setSaveFeedback('');
+
+        if (!validateStep(1)) {
+            window.goToCarFormStep(1);
+            setSaveFeedback('Preencha os dados do veículo para salvar.', true);
+            return;
+        }
+        if (!validateStep(2)) {
+            window.goToCarFormStep(2);
+            setSaveFeedback('Preencha os detalhes da venda para salvar.', true);
+            return;
+        }
+
         try {
             const editIdInput = form.querySelector('[name="carId"]');
             const editId = editIdInput ? editIdInput.value : null;
+
             let imagesData = [];
             let finalUrls = [];
+            let originalBtnText = '';
 
-            // Image Upload Strategy
             if (window.carImagesState.length > 0) {
-                try {
-                    const btn = form.querySelector('button[type="submit"]');
-                    const originalBtnText = btn.innerText;
-                    btn.innerText = 'Processando fotos...';
+                const btn = document.getElementById('btnSaveVehicle');
+                if (btn) {
+                    originalBtnText = btn.textContent;
+                    btn.textContent = 'Processando fotos...';
                     btn.disabled = true;
+                }
 
+                try {
                     let imgCount = 0;
                     const totalImgs = window.carImagesState.length;
 
-                    for (let imgObj of window.carImagesState) {
-                        imgCount++;
-                        btn.innerText = `Enviando ${imgCount}/${totalImgs}...`;
+                    for (const imgObj of window.carImagesState) {
+                        imgCount += 1;
+                        const btn = document.getElementById('btnSaveVehicle');
+                        if (btn) btn.textContent = `Enviando ${imgCount}/${totalImgs}...`;
 
                         if (imgObj.type === 'url') {
-                            if (imgObj.src && imgObj.src.length > 10) {
-                                finalUrls.push(imgObj.src);
+                            if (imgObj.src && imgObj.src.length > 10) finalUrls.push(imgObj.src);
+                            continue;
+                        }
+
+                        const file = imgObj.src;
+                        let blobToUpload = file;
+
+                        if (file.size > 2 * 1024 * 1024) {
+                            try {
+                                const compressedBase64 = await compressImage(file, 0.7);
+                                const arr = compressedBase64.split(',');
+                                const mime = arr[0].match(/:(.*?);/)[1];
+                                const bstr = atob(arr[1]);
+                                let n = bstr.length;
+                                const u8arr = new Uint8Array(n);
+                                while (n--) u8arr[n] = bstr.charCodeAt(n);
+                                blobToUpload = new Blob([u8arr], { type: mime });
+                            } catch (err) {
+                                console.warn('Falha ao comprimir imagem. Usando arquivo original.');
                             }
-                        } else {
-                            // Upload Direto do Arquivo (Objetivo e Rápido)
-                            const file = imgObj.src;
+                        }
 
-                            // Se o arquivo for maior que 2MB, fazemos uma compressão rápida no cliente
-                            // Se for menor, enviamos o original para máxima qualidade e velocidade
-                            let blobToUpload = file;
-                            if (file.size > 2 * 1024 * 1024) {
-                                try {
-                                    const compressedBase64 = await compressImage(file, 0.7);
-                                    const dataURLtoBlob = (dataurl) => {
-                                        const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1];
-                                        const bstr = atob(arr[1]);
-                                        let n = bstr.length;
-                                        const u8arr = new Uint8Array(n);
-                                        while (n--) u8arr[n] = bstr.charCodeAt(n);
-                                        return new Blob([u8arr], { type: mime });
-                                    };
-                                    blobToUpload = dataURLtoBlob(compressedBase64);
-                                } catch (e) {
-                                    console.warn("Falha na compressão, enviando original...");
-                                }
-                            }
+                        const safeName = `img_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+                        const fileName = `${safeName}.jpg`;
 
-                            const safeName = `img_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-                            const fileName = `${safeName}.jpg`;
+                        let uploadSuccess = false;
+                        if (supabaseClient) {
+                            try {
+                                const { error } = await supabaseClient.storage.from('car-photos').upload(fileName, blobToUpload, {
+                                    contentType: 'image/jpeg',
+                                    cacheControl: '3600'
+                                });
 
-                            let uploadSuccess = false;
-                            if (supabaseClient) {
-                                try {
-                                    const { error, data } = await supabaseClient.storage.from('car-photos').upload(fileName, blobToUpload, {
-                                        contentType: 'image/jpeg',
-                                        cacheControl: '3600'
-                                    });
-
-                                    if (!error) {
-                                        const { data: publicData } = supabaseClient.storage.from('car-photos').getPublicUrl(fileName);
-                                        if (publicData) {
-                                            finalUrls.push(publicData.publicUrl);
-                                            uploadSuccess = true;
-                                        }
-                                    } else {
-                                        console.warn("Supabase Error:", error);
+                                if (!error) {
+                                    const { data: publicData } = supabaseClient.storage.from('car-photos').getPublicUrl(fileName);
+                                    if (publicData) {
+                                        finalUrls.push(publicData.publicUrl);
+                                        uploadSuccess = true;
                                     }
-                                } catch (e) { console.error("Supabase Exception:", e); }
-                            }
-
-                            // Fallback: Upload failed or Offline -> Use Base64 (Local)
-                            if (!uploadSuccess) {
-                                showToast(`⚠️ Upload falhou, salvando localmente: ${file.name}`);
-                                try {
-                                    const base64Local = await fileToBase64(blobToUpload);
-                                    finalUrls.push(base64Local);
-                                } catch (e) {
-                                    console.error("Base64 conversion failed", e);
                                 }
+                            } catch (err) {
+                                console.error('Supabase Exception:', err);
+                            }
+                        }
+
+                        if (!uploadSuccess) {
+                            showToast(`Upload falhou, salvando localmente: ${file.name}`);
+                            try {
+                                const base64Local = await fileToBase64(blobToUpload);
+                                finalUrls.push(base64Local);
+                            } catch (err) {
+                                console.error('Falha ao converter para base64:', err);
                             }
                         }
                     }
-
-                } catch (imgError) {
-                    console.error("Erro no processamento de fotos:", imgError);
                 } finally {
-                    const btn = form.querySelector('button[type="submit"]');
+                    const btn = document.getElementById('btnSaveVehicle');
                     if (btn) {
-                        btn.innerText = originalBtnText;
+                        btn.textContent = originalBtnText || 'Salvar Veículo';
                         btn.disabled = false;
                     }
                 }
-                imagesData = finalUrls.filter(u => u && u.trim() !== "");
+
+                imagesData = finalUrls.filter(Boolean);
             } else if (editId) {
                 const existingCar = (carsData || []).find(c => c.id == editId);
                 imagesData = existingCar ? (existingCar.images || []) : [];
             }
 
-            // Collect selected options (Robust Method)
-            const checkedOptions = [];
-            // Query strictly for CHECKED checkboxes with name="carOptions"
-            const optionsNodes = document.querySelectorAll('input[name="carOptions"]:checked');
-            if (optionsNodes.length > 0) {
-                optionsNodes.forEach(cb => {
-                    if (cb.value && cb.value.trim() !== "") {
-                        checkedOptions.push(cb.value);
-                    }
-                });
-            }
+            const checkedOptions = Array.from(document.querySelectorAll('input[name="carOptions"]:checked')).map(cb => cb.value).filter(Boolean);
+            const selectedLifestyle = Array.from(document.querySelectorAll('input[name="lifestyle"]:checked')).map(cb => cb.value);
 
-            const selectedLifestyle = [];
-            document.querySelectorAll('input[name="lifestyle"]:checked').forEach(cb => {
-                selectedLifestyle.push(cb.value);
-            });
+            const existingCar = editId ? (carsData || []).find(c => c.id == editId) : null;
 
-            // Detect Edit Mode and find existing car safely
-            const existingCar = editId ? carsData.find(c => c.id == editId) : null;
-
-            // Get FIPE data or Manual data
-            let brand = window.isBrandManual ? document.getElementById('brandManualInput').value : window.selectedBrandName;
-            let model = window.isModelManual ? document.getElementById('modelManualInput').value : window.selectedModelName;
-
-            // Fix Year Logic
-            let yearText = "";
-            if (window.isYearManual) {
-                yearText = document.getElementById('yearManualInput').value;
-            } else {
-                // If select is disabled or empty but we are in edit mode, trust existing car
-                if (editId && existingCar && (!yearSelect.value || yearSelect.value === "")) {
-                    yearText = existingCar.year;
-                } else {
-                    yearText = yearSelect.options[yearSelect.selectedIndex] ? yearSelect.options[yearSelect.selectedIndex].text : '';
-                }
-            }
-
-            // Fix Version Logic (Manual vs Select)
-            let versionText = "";
-            if (window.isVersionManual) {
-                versionText = document.getElementById('versionManualInput').value;
-            } else {
-                if (editId && existingCar && (!versionSelect.value || versionSelect.value === "")) {
-                    // If editing and select is empty, use existing title part if possible or just rely on brand model
-                    versionText = ""; // Hard to extract exact version string from title reliably without FIPE id
-                } else {
-                    versionText = versionSelect.options[versionSelect.selectedIndex] ? versionSelect.options[versionSelect.selectedIndex].text : '';
-                }
-            }
+            let brand = brandSelect.options[brandSelect.selectedIndex] ? brandSelect.options[brandSelect.selectedIndex].text.trim() : '';
+            let model = modelSelect.options[modelSelect.selectedIndex] ? modelSelect.options[modelSelect.selectedIndex].text.trim() : '';
+            let yearText = yearSelect.options[yearSelect.selectedIndex] ? yearSelect.options[yearSelect.selectedIndex].text.trim() : '';
+            let versionText = versionSelect.options[versionSelect.selectedIndex] ? versionSelect.options[versionSelect.selectedIndex].text.trim() : '';
 
             if (editId && existingCar) {
                 if (!brand) brand = existingCar.brand;
@@ -1694,80 +2135,51 @@ function initAdmin() {
             }
 
             if (!brand || !model) {
-                showToast("Por favor, preencha a Marca e o Modelo.");
+                showToast('Preencha marca e modelo.');
                 return;
             }
 
-            // ... (Custom Brand logic) ...
+            const rawVideoUrl = form.videoUrl ? String(form.videoUrl.value || '').trim() : '';
+            if (rawVideoUrl && !resolveYoutubeEmbedUrl(rawVideoUrl)) {
+                showToast('URL de video invalida. Use um link do YouTube.');
+                return;
+            }
 
-            // ... (Duplicate logic) ...
-
-            // Get current user correctly
-            // ---ROBUST USER DETECTION (100% SURE)--
-            let currentUser = 'Sistema'; // Default
-
-            // 1. Check Primary Session Object
+            let currentUser = 'Sistema';
             const sessionData = localStorage.getItem('souza_session');
             if (sessionData) {
                 try {
                     const session = JSON.parse(sessionData);
                     if (session && session.username) currentUser = session.username;
-                } catch (e) { }
+                } catch (e) {}
             }
 
-            // 2. Fallback: Simple String Key (Often used in simple logins)
-            if (currentUser === 'Sistema' || currentUser === 'Admin') {
-                const simpleUser = localStorage.getItem('souza_current_user');
-                if (simpleUser && simpleUser.trim() !== "") currentUser = simpleUser;
-            }
-
-            // 3. Fallback: Legacy objects
-            if (currentUser === 'Sistema') {
-                try {
-                    const legacy = JSON.parse(localStorage.getItem('souza_user'));
-                    if (legacy && legacy.username) currentUser = legacy.username;
-                } catch (e) { }
-            }
-
-            // 4. DOM THEFT (UI PROOF) - If the sidebar says "Kaua", IT IS KAUA.
             const domUser = document.getElementById('lblUsername');
-
             if (domUser && domUser.innerText) {
                 const txt = domUser.innerText.trim();
-                if (txt && txt !== 'Admin' && txt !== '...' && txt !== 'undefined') {
-                    currentUser = txt;
-                }
+                if (txt && txt !== '...' && txt !== 'undefined') currentUser = txt;
             }
 
-            // Log for debugging
-            console.log("🔒 USER FINAL (WITH DOM CHECK): ", currentUser);
-
-            // Generate unique code SZ + YEAR + random alphanumeric
             const generateCarCode = () => {
                 const year = new Date().getFullYear();
                 const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
                 let random = '';
-                for (let i = 0; i < 4; i++) {
-                    random += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
+                for (let i = 0; i < 4; i++) random += chars.charAt(Math.floor(Math.random() * chars.length));
                 return `SZ${year}${random}`;
             };
 
-            // Construct Title: Brand + Model + Version (Clean & Smart)
             let finalTitle = `${brand} ${model}`.trim();
+            if (versionText && !finalTitle.toLowerCase().includes(versionText.toLowerCase())) {
+                finalTitle += ` ${versionText}`;
+            }
 
-            if (versionText && versionText !== "Selecione o Ano" && !versionText.includes("Selecione um") && versionText.trim() !== "") {
-                const v = versionText.trim();
-                const t = finalTitle;
-
-                // Case A: Version starts with Title
-                if (v.toLowerCase().startsWith(t.toLowerCase())) {
-                    finalTitle = v;
-                }
-                // Case B: Title ends with parts of version
-                else if (!t.toLowerCase().includes(v.toLowerCase())) {
-                    finalTitle += ` ${v}`;
-                }
+            const addedDateRaw = form.addedDate ? String(form.addedDate.value || '').trim() : '';
+            let createdAtValue = editId && existingCar ? existingCar.createdAt : new Date().toISOString();
+            if (addedDateRaw) {
+                const fallbackTime = (createdAtValue && createdAtValue.includes('T'))
+                    ? createdAtValue.split('T')[1]
+                    : '12:00:00.000Z';
+                createdAtValue = `${addedDateRaw}T${fallbackTime}`;
             }
 
             const carObj = {
@@ -1778,7 +2190,7 @@ function initAdmin() {
                 model: capitalizeText(model),
                 year: yearText,
                 price: Number(form.price.value),
-                km: form.km.value.includes('km') ? form.km.value : form.km.value + ' km',
+                km: form.km.value.includes('km') ? form.km.value : `${form.km.value} km`,
                 images: imagesData,
                 badge: selectedLifestyle.includes('premium') ? 'Luxo' : 'Destaque',
                 fuel: form.fuel.value || 'Flex',
@@ -1790,227 +2202,530 @@ function initAdmin() {
                 lifestyle: selectedLifestyle,
                 condition: form.condition ? form.condition.value : 'seminovos',
                 description: form.description ? form.description.value : '',
-                isManual: window.isBrandManual || window.isModelManual || window.isYearManual,
+                videoUrl: rawVideoUrl,
+                isManual: false,
                 type: currentVehicleType,
-                // Preserva quem criou se for edição, senão usa quem tá logado agora
                 createdBy: editId && existingCar ? (existingCar.createdBy || currentUser) : currentUser,
                 lastEditedBy: currentUser,
-                createdAt: editId && existingCar ? existingCar.createdAt : new Date().toISOString()
+                createdAt: createdAtValue
             };
 
-            // Save to DB
-            try {
-                await DB.saveCar(carObj);
-                await refreshAppData();
-                if (window.renderAdminList) window.renderAdminList();
-                showToast(editId ? 'Veículo atualizado!' : `Veículo cadastrado! Código: ${carObj.code}`);
-            } catch (dbError) {
-                console.error("DB Save Error:", dbError);
-                showToast("Erro ao salvar no banco de dados: " + dbError.message);
-                return; // Stop reset
-            }
+            await DB.saveCar(carObj);
+            await refreshAppData();
+            if (window.renderAdminList) window.renderAdminList();
 
-            // Reset form
+            showToast(editId ? 'Veículo atualizado!' : `Veículo cadastrado! Codigo: ${carObj.code}`);
+            setSaveFeedback('Veículo salvo com sucesso.');
+            window.lastSavedCarId = Number(carObj.id);
+
+            if (postSaveActions) postSaveActions.classList.add('active');
+
             form.reset();
+            if (form.addedDate) form.addedDate.value = new Date().toISOString().split('T')[0];
             window.carImagesState = [];
             window.renderImagePreviews();
-            document.getElementById('carImageFile').value = '';
-            form.querySelector('button[type="submit"]').innerText = 'SALVAR VEÍCULO';
+            if (imageInput) imageInput.value = '';
 
-            // Reset selects
-            brandSelect.value = "";
-            modelSelect.innerHTML = '<option value="">Selecione a Marca primeiro</option>';
-            modelSelect.disabled = true;
-            yearSelect.innerHTML = '<option value="">Selecione o Modelo primeiro</option>';
-            yearSelect.disabled = true;
-            versionSelect.innerHTML = '<option value="">Selecione o Ano</option>';
-            versionSelect.disabled = true;
+            loadBrands();
 
-            // Reset checkboxes
-            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-
-            // Reset edit ID if exists
             const idInp = form.querySelector('[name="carId"]');
             if (idInp) idInp.value = '';
 
-            // Reset global names
-            window.selectedBrandName = "";
-            window.selectedModelName = "";
+            window.selectedBrandName = '';
+            window.selectedModelName = '';
 
-            // Reset Manual Flags and Inputs
-            if (window.isBrandManual) window.toggleManualBrand();
-            if (window.isModelManual) window.toggleManualModel();
-            if (window.isYearManual) window.toggleManualYear();
-            document.getElementById('brandManualInput').value = '';
-            document.getElementById('modelManualInput').value = '';
-            document.getElementById('yearManualInput').value = '';
-
-            // Scroll to top
+            setCarFormMode('new');
+            window.goToCarFormStep(1);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (err) {
-            console.error("Erro no salvamento:", err);
-            showToast("Erro ao salvar. Verifique o console.");
+            console.error('Erro no salvamento:', err);
+            showToast('Erro ao salvar. Verifique o console.');
+            setSaveFeedback('Erro ao salvar o veículo.', true);
         }
-    });
+    }
 
-    // --- Sellers Management Logic (Supabase Powered) ---
-    window.renderSellers = async () => {
+    form.addEventListener('submit', saveVehicleForm);
+
+    function bindStockFilters() {
+        const searchInput = document.getElementById('stockSearchInput');
+        const brandFilter = document.getElementById('stockFilterBrand');
+        const statusFilter = document.getElementById('stockFilterStatus');
+        const fuelFilter = document.getElementById('stockFilterFuel');
+        const yearMinInput = document.getElementById('stockYearMin');
+        const yearMaxInput = document.getElementById('stockYearMax');
+        const priceMinInput = document.getElementById('stockPriceMin');
+        const priceMaxInput = document.getElementById('stockPriceMax');
+        const clearBtn = document.getElementById('clearStockFilters');
+
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                window.adminStockFilterState.search = searchInput.value;
+                window.renderAdminList();
+            });
+        }
+
+        if (brandFilter) {
+            brandFilter.addEventListener('change', () => {
+                window.adminStockFilterState.brand = brandFilter.value;
+                window.renderAdminList();
+            });
+        }
+
+        if (statusFilter) {
+            statusFilter.addEventListener('change', () => {
+                window.adminStockFilterState.status = statusFilter.value;
+                window.renderAdminList();
+            });
+        }
+
+        if (fuelFilter) {
+            fuelFilter.addEventListener('change', () => {
+                window.adminStockFilterState.fuel = fuelFilter.value;
+                window.renderAdminList();
+            });
+        }
+
+        if (yearMinInput) {
+            yearMinInput.addEventListener('input', () => {
+                window.adminStockFilterState.yearMin = Number(yearMinInput.value);
+                updateStockRangeLabels();
+                window.renderAdminList();
+            });
+        }
+
+        if (yearMaxInput) {
+            yearMaxInput.addEventListener('input', () => {
+                window.adminStockFilterState.yearMax = Number(yearMaxInput.value);
+                updateStockRangeLabels();
+                window.renderAdminList();
+            });
+        }
+
+        if (priceMinInput) {
+            priceMinInput.addEventListener('input', () => {
+                window.adminStockFilterState.priceMin = Number(priceMinInput.value);
+                updateStockRangeLabels();
+                window.renderAdminList();
+            });
+        }
+
+        if (priceMaxInput) {
+            priceMaxInput.addEventListener('input', () => {
+                window.adminStockFilterState.priceMax = Number(priceMaxInput.value);
+                updateStockRangeLabels();
+                window.renderAdminList();
+            });
+        }
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                window.adminStockFilterState.search = '';
+                window.adminStockFilterState.brand = '';
+                window.adminStockFilterState.status = '';
+                window.adminStockFilterState.fuel = '';
+
+                window.adminStockRangesBootstrapped = false;
+                syncStockRangeBounds();
+                updateStockRangeLabels();
+
+                if (searchInput) searchInput.value = '';
+                if (brandFilter) brandFilter.value = '';
+                if (statusFilter) statusFilter.value = '';
+                if (fuelFilter) fuelFilter.value = '';
+
+                window.renderAdminList();
+            });
+        }
+    }
+
+    function formatLastLogin(dateValue) {
+        if (!dateValue) return 'Nunca logou';
+        const date = new Date(dateValue);
+        if (Number.isNaN(date.getTime())) return 'Nunca logou';
+        return date.toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    function getSellerStockCount(username) {
+        return (carsData || []).filter(c => (c.createdBy || '').toLowerCase() === (username || '').toLowerCase()).length;
+    }
+
+    window.renderSellers = async (forceReload = false) => {
         const container = document.getElementById('sellersList');
         if (!container) return;
 
-        container.innerHTML = '<div style="color: #666; padding: 20px;">Consultando base de dados online...</div>';
+        if (forceReload || !Array.isArray(window.adminSellerCache) || !window.adminSellerCache.length) {
+            container.innerHTML = '<div class="help-text">Consultando base de dados...</div>';
 
-        // 1. Fetch Sellers from Supabase
-        let sellers = [];
-        if (supabaseClient) {
-            const { data, error } = await supabaseClient.from('vendedores').select('*').order('username');
-            if (!error) sellers = data;
+            let sellers = [];
+            if (supabaseClient) {
+                const { data, error } = await supabaseClient.from('vendedores').select('*').order('username');
+                if (!error && Array.isArray(data)) sellers = data;
+            }
+            window.adminSellerCache = sellers;
         }
 
-        if (sellers.length === 0) {
-            container.innerHTML = '<div style="color:#666; font-style:italic;">Nenhum vendedor adicional cadastrado na nuvem.</div>';
+        const searchTerm = (document.getElementById('sellerSearchInput')?.value || '').toLowerCase().trim();
+        const sortMode = document.getElementById('sellerSortSelect')?.value || 'name';
+
+        let sellers = [...window.adminSellerCache];
+
+        if (searchTerm) {
+            sellers = sellers.filter(s => (s.username || '').toLowerCase().includes(searchTerm));
+        }
+
+        sellers.sort((a, b) => {
+            if (sortMode === 'logins') {
+                const aDate = a.last_login ? new Date(a.last_login).getTime() : 0;
+                const bDate = b.last_login ? new Date(b.last_login).getTime() : 0;
+                return bDate - aDate;
+            }
+
+            if (sortMode === 'stock') {
+                return getSellerStockCount(b.username) - getSellerStockCount(a.username);
+            }
+
+            return (a.username || '').localeCompare(b.username || '');
+        });
+
+        if (!sellers.length) {
+            container.innerHTML = '<div class="help-text">Nenhum vendedor encontrado.</div>';
             return;
         }
 
-        container.innerHTML = sellers.map(s => {
-            const userCars = carsData.filter(c => c.createdBy && c.createdBy.toLowerCase() === s.username.toLowerCase());
-            const totalCreated = userCars.length;
-
-            // Format Last Login
-            let lastLoginStr = "Nunca logou";
-            if (s.last_login) {
-                const date = new Date(s.last_login);
-                lastLoginStr = date.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-            }
+        container.innerHTML = sellers.map(seller => {
+            const totalCars = getSellerStockCount(seller.username);
+            const loginCount = Number(seller.login_count || 0);
 
             return `
-            <div style="background:#1a1a1a; padding:20px; border-radius:12px; border:1px solid #333; display:flex; flex-direction:column; gap:15px; position:relative;">
-                <div style="display:flex; justify-content:space-between; align-items:start;">
-                    <div>
-                        <div style="font-weight:700; color:#d4af37; font-size:1.2rem;">${s.username}</div>
-                        <div style="font-size:0.8em; color:#888;">Senha: ${s.password}</div>
-                        <div style="font-size:0.7em; color:#555; margin-top:5px;">Último acesso: <span style="color:#888;">${lastLoginStr}</span></div>
+                <article class="seller-card">
+                    <h3 class="seller-title">Nome: ${seller.username.toUpperCase()}</h3>
+                    <div class="seller-line"></div>
+                    <div class="seller-meta">Senha: ${seller.password}</div>
+                    <div class="seller-meta">Ultimo acesso: ${formatLastLogin(seller.last_login)}</div>
+                    <div class="seller-line"></div>
+                    <div class="seller-kpis">
+                        <span class="card-badge badge-inactive">${loginCount} logins</span>
+                        <span class="card-badge badge-inactive">${totalCars} carros em estoque</span>
                     </div>
-                    <div style="background:#333; padding:5px 10px; border-radius:12px; text-align:center;">
-                         <div style="font-size:0.9rem; color:#fff; font-weight:bold;">${s.login_count || 0}</div>
-                         <div style="font-size:0.5rem; color:#666; text-transform:uppercase;">Logins</div>
+                    <div class="seller-line"></div>
+                    <div class="seller-actions">
+                        <button class="btn-secondary" onclick="editSeller('${seller.username}')">Edit</button>
+                        <button class="btn-danger" onclick="deleteSeller('${seller.username}')">Remove</button>
+                        <button class="btn-secondary" onclick="duplicateSeller('${seller.username}')">Duplicar</button>
                     </div>
-                </div>
-                
-                <div style="display:grid; grid-template-columns: 1fr; gap:10px;">
-                    <div style="background:#0a0a0a; padding:10px; border-radius:8px; text-align:center; border:1px solid #222;">
-                        <div style="font-size:1.3rem; font-weight:800; color:#fff;">${totalCreated}</div>
-                        <div style="font-size:0.6rem; color:#666; text-transform:uppercase;">Carros em Estoque</div>
-                    </div>
-                </div>
-
-                <div style="border-top: 1px solid #222; padding-top:10px; display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:0.6rem; color:#444;">AUDIT_ID: ${s.id.slice(0, 8)}</span>
-                    <div style="display:flex; gap:10px;">
-                        <button onclick="editSeller('${s.username}')" style="color:#d4af37; background:none; border:none; cursor:pointer; font-size:0.8rem; font-weight:bold;">Editar</button>
-                        <button onclick="deleteSeller('${s.username}')" style="color:#ff3333; background:none; border:none; cursor:pointer; font-size:0.8rem; font-weight:bold;">Remover</button>
-                    </div>
-                </div>
-            </div>
+                </article>
             `;
         }).join('');
     };
 
     window.createSeller = async () => {
-        const u = document.getElementById('sellerUser').value.trim();
-        const p = document.getElementById('sellerPass').value.trim();
-        const form = document.getElementById('newSellerForm');
-        const isEditing = form.dataset.editMode === 'true';
-        const oldUsername = form.dataset.oldUsername;
+        const usernameInput = document.getElementById('sellerUser');
+        const passInput = document.getElementById('sellerPass');
+        const sellerForm = document.getElementById('newSellerForm');
 
-        if (!u || !p) { alert('Preencha usuario e senha'); return; }
-        if (!supabaseClient) { alert('Erro: Conexão com Supabase não ativa.'); return; }
+        const username = (usernameInput?.value || '').trim();
+        const password = (passInput?.value || '').trim();
+
+        if (!username || !password) {
+            alert('Preencha usuario e senha.');
+            return;
+        }
+
+        if (!supabaseClient) {
+            alert('Conexao com Supabase nao esta ativa.');
+            return;
+        }
+
+        const isEditing = sellerForm.dataset.editMode === 'true';
+        const oldUsername = sellerForm.dataset.oldUsername;
 
         try {
             if (isEditing) {
                 const { error } = await supabaseClient
                     .from('vendedores')
-                    .update({ username: u, password: p })
+                    .update({ username, password })
                     .eq('username', oldUsername);
 
                 if (error) throw error;
-                alert('Vendedor atualizado com sucesso!');
+                showToast('Vendedor atualizado com sucesso!');
             } else {
                 const { error } = await supabaseClient
                     .from('vendedores')
-                    .insert([{ username: u, password: p, role: 'vendedor' }]);
+                    .insert([{ username, password, role: 'vendedor' }]);
 
                 if (error) {
-                    if (error.code === '23505') alert('Este nome de usuário já existe.');
-                    else throw error;
-                    return;
+                    if (error.code === '23505') {
+                        alert('Este nome de usuario ja existe.');
+                        return;
+                    }
+                    throw error;
                 }
-                alert('Vendedor criado na nuvem!');
+
+                showToast('Vendedor criado com sucesso!');
             }
 
-            // Reset Form and Refresh
-            form.reset();
-            delete form.dataset.editMode;
-            delete form.dataset.oldUsername;
-            form.querySelector('button[type="submit"]').innerText = 'CRIAR';
-            window.renderSellers();
+            sellerForm.reset();
+            delete sellerForm.dataset.editMode;
+            delete sellerForm.dataset.oldUsername;
+            const submitBtn = sellerForm.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.textContent = 'Criar';
 
+            await window.renderSellers(true);
         } catch (err) {
-            console.error("Erro Vendedores:", err);
-            alert("Erro ao processar: " + err.message);
+            console.error('Erro vendedores:', err);
+            alert(`Erro ao processar vendedor: ${err.message}`);
         }
     };
 
     window.editSeller = async (username) => {
-        const { data, error } = await supabaseClient.from('vendedores').select('*').eq('username', username).single();
+        if (!supabaseClient) return;
+
+        const { data, error } = await supabaseClient
+            .from('vendedores')
+            .select('*')
+            .eq('username', username)
+            .single();
+
         if (error || !data) return;
 
-        const form = document.getElementById('newSellerForm');
+        const sellerForm = document.getElementById('newSellerForm');
+        const submitBtn = sellerForm.querySelector('button[type="submit"]');
+
         document.getElementById('sellerUser').value = data.username;
         document.getElementById('sellerPass').value = data.password;
-        form.dataset.editMode = 'true';
-        form.dataset.oldUsername = data.username;
-        form.querySelector('button[type="submit"]').innerText = 'ATUALIZAR';
+        sellerForm.dataset.editMode = 'true';
+        sellerForm.dataset.oldUsername = data.username;
 
-        window.scrollTo({ top: form.offsetTop - 100, behavior: 'smooth' });
+        if (submitBtn) submitBtn.textContent = 'Atualizar';
+
+        sellerForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
     };
 
     window.deleteSeller = async (username) => {
-        if (!confirm(`Deseja realmente remover o vendedor ${username}?`)) return;
+        if (!confirm(`Deseja remover o vendedor ${username}?`)) return;
+        if (!supabaseClient) return;
 
         const { error } = await supabaseClient.from('vendedores').delete().eq('username', username);
         if (error) {
-            alert("Erro ao deletar: " + error.message);
-        } else {
-            alert("Vendedor removido!");
-            window.renderSellers();
-        }
-    };
-
-    // --- Settings Logic ---
-    window.saveAdminSettings = () => {
-        const phone = document.getElementById('adminPhoneInput').value.replace(/\D/g, '');
-        if (phone.length < 10) {
-            alert('Número inválido');
+            alert(`Erro ao deletar: ${error.message}`);
             return;
         }
-        localStorage.setItem('souza_admin_phone', phone);
-        alert('Configurações salvas!');
+
+        showToast('Vendedor removido!');
+        await window.renderSellers(true);
     };
 
-    // Init
+    window.duplicateSeller = async (username) => {
+        const base = (username || '').trim();
+        if (!base) return;
+
+        const suggested = `${base}.copy`;
+        const newUsername = prompt('Informe o novo usuario para duplicacao:', suggested);
+        if (!newUsername) return;
+
+        if (!supabaseClient) {
+            alert('Conexao com Supabase nao esta ativa.');
+            return;
+        }
+
+        const source = window.adminSellerCache.find(s => s.username === base);
+        if (!source) {
+            alert('Vendedor de origem nao encontrado.');
+            return;
+        }
+
+        const { error } = await supabaseClient
+            .from('vendedores')
+            .insert([{ username: newUsername.trim(), password: source.password, role: source.role || 'vendedor' }]);
+
+        if (error) {
+            alert(`Erro ao duplicar vendedor: ${error.message}`);
+            return;
+        }
+
+        showToast('Vendedor duplicado com sucesso!');
+        await window.renderSellers(true);
+    };
+
+    const sellerSearchInput = document.getElementById('sellerSearchInput');
+    const sellerSortSelect = document.getElementById('sellerSortSelect');
+    if (sellerSearchInput) sellerSearchInput.addEventListener('input', () => window.renderSellers(false));
+    if (sellerSortSelect) sellerSortSelect.addEventListener('change', () => window.renderSellers(false));
+
+    function getIntegrationConfig() {
+        try {
+            return JSON.parse(localStorage.getItem('souza_integrations') || '{}');
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function saveIntegrationConfig(cfg) {
+        localStorage.setItem('souza_integrations', JSON.stringify(cfg));
+    }
+
+    function setToggleState(toggleEl, isActive) {
+        if (!toggleEl) return;
+        toggleEl.classList.toggle('active', !!isActive);
+    }
+
+    function bindIntegrations() {
+        const pixelToggle = document.getElementById('pixelToggle');
+        const gaToggle = document.getElementById('gaToggle');
+        const pixelIdInput = document.getElementById('pixelIdInput');
+        const gaIdInput = document.getElementById('gaIdInput');
+
+        const savePixelBtn = document.getElementById('savePixelBtn');
+        const removePixelBtn = document.getElementById('removePixelBtn');
+        const saveGaBtn = document.getElementById('saveGaBtn');
+        const removeGaBtn = document.getElementById('removeGaBtn');
+
+        const cfg = getIntegrationConfig();
+        const pixelCfg = cfg.pixel || { enabled: false, id: '' };
+        const gaCfg = cfg.ga || { enabled: false, id: '' };
+
+        if (pixelIdInput) pixelIdInput.value = pixelCfg.id || '';
+        if (gaIdInput) gaIdInput.value = gaCfg.id || '';
+        setToggleState(pixelToggle, !!pixelCfg.enabled);
+        setToggleState(gaToggle, !!gaCfg.enabled);
+
+        if (pixelToggle) {
+            pixelToggle.addEventListener('click', () => {
+                pixelToggle.classList.toggle('active');
+            });
+        }
+
+        if (gaToggle) {
+            gaToggle.addEventListener('click', () => {
+                gaToggle.classList.toggle('active');
+            });
+        }
+
+        if (savePixelBtn) {
+            savePixelBtn.addEventListener('click', () => {
+                const current = getIntegrationConfig();
+                current.pixel = {
+                    enabled: pixelToggle ? pixelToggle.classList.contains('active') : false,
+                    id: (pixelIdInput?.value || '').trim()
+                };
+                saveIntegrationConfig(current);
+                showToast('Facebook Pixel atualizado.');
+            });
+        }
+
+        if (removePixelBtn) {
+            removePixelBtn.addEventListener('click', () => {
+                const current = getIntegrationConfig();
+                current.pixel = { enabled: false, id: '' };
+                saveIntegrationConfig(current);
+                if (pixelIdInput) pixelIdInput.value = '';
+                setToggleState(pixelToggle, false);
+                showToast('Facebook Pixel removido.');
+            });
+        }
+
+        if (saveGaBtn) {
+            saveGaBtn.addEventListener('click', () => {
+                const current = getIntegrationConfig();
+                current.ga = {
+                    enabled: gaToggle ? gaToggle.classList.contains('active') : false,
+                    id: (gaIdInput?.value || '').trim()
+                };
+                saveIntegrationConfig(current);
+                showToast('Google Analytics atualizado.');
+            });
+        }
+
+        if (removeGaBtn) {
+            removeGaBtn.addEventListener('click', () => {
+                const current = getIntegrationConfig();
+                current.ga = { enabled: false, id: '' };
+                saveIntegrationConfig(current);
+                if (gaIdInput) gaIdInput.value = '';
+                setToggleState(gaToggle, false);
+                showToast('Google Analytics removido.');
+            });
+        }
+    }
+
+    function getStoredCompanyInfo() {
+        try {
+            const parsed = JSON.parse(localStorage.getItem('souza_company_info') || '{}');
+            return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    window.saveAdminSettings = () => {
+        const phoneInput = document.getElementById('adminPhoneInput');
+        const companyNameInput = document.getElementById('adminCompanyNameInput');
+        const companyCnpjInput = document.getElementById('adminCompanyCnpjInput');
+        const companyEmailInput = document.getElementById('adminCompanyEmailInput');
+        const storeAddressInput = document.getElementById('adminStoreAddressInput');
+
+        const phone = (phoneInput?.value || '').replace(/\D/g, '');
+        const companyName = (companyNameInput?.value || '').trim();
+        const companyCnpj = (companyCnpjInput?.value || '').trim();
+        const companyEmail = (companyEmailInput?.value || '').trim();
+        const storeAddress = (storeAddressInput?.value || '').trim();
+
+        if (phone.length < 10) {
+            alert('Numero invalido.');
+            return;
+        }
+
+        localStorage.setItem('souza_admin_phone', phone);
+        localStorage.setItem('souza_company_info', JSON.stringify({
+            name: companyName,
+            cnpj: companyCnpj,
+            email: companyEmail,
+            address: storeAddress
+        }));
+
+        if (storeAddress) {
+            localStorage.setItem('souza_store_address', storeAddress);
+        } else {
+            localStorage.removeItem('souza_store_address');
+        }
+
+        updateWhatsAppLinks();
+        showToast('Configurações salvas.');
+    };
+
     loadBrands();
     renderOptions();
-    renderAdminList();
-    if (document.getElementById('sellersList')) window.renderSellers();
+    bindStockFilters();
+    bindIntegrations();
 
-    // Load Settings
+    renderAdminList();
+    if (window.renderAdminDashboard) window.renderAdminDashboard();
+
     const savedPhone = localStorage.getItem('souza_admin_phone');
     const phoneInput = document.getElementById('adminPhoneInput');
     if (savedPhone && phoneInput) phoneInput.value = savedPhone;
-}
 
-// ===== Shared Components =====
+    const companyInfo = getStoredCompanyInfo();
+    const companyNameInput = document.getElementById('adminCompanyNameInput');
+    const companyCnpjInput = document.getElementById('adminCompanyCnpjInput');
+    const companyEmailInput = document.getElementById('adminCompanyEmailInput');
+    const storeAddressInput = document.getElementById('adminStoreAddressInput');
+    if (companyNameInput) companyNameInput.value = companyInfo.name || '';
+    if (companyCnpjInput) companyCnpjInput.value = companyInfo.cnpj || '';
+    if (companyEmailInput) companyEmailInput.value = companyInfo.email || '';
+    if (storeAddressInput) {
+        storeAddressInput.value = companyInfo.address || localStorage.getItem('souza_store_address') || '';
+    }
+
+    if (form.addedDate) form.addedDate.value = new Date().toISOString().split('T')[0];
+    setCarFormMode('new');
+}
 function initMobileMenu() {
     const btn = document.querySelector('.mobile-menu-btn') || document.getElementById('mobileMenuBtn');
     const menu = document.querySelector('.mobile-menu') || document.getElementById('mobileMenu');
@@ -2093,14 +2808,16 @@ function renderFeaturedCarousel() {
                </div>`
             : '';
 
+        const { primary, hover } = resolveCardImagePair(car);
+        if (hover && hover !== primary) prefetchCardImage(hover);
+
         return `
-        <article class="carousel-car-card" onclick="window.location.href='detalhes.html?id=${car.id}'" style="cursor:pointer">
+        <article class="carousel-car-card" onclick="window.location.href='detalhes.html?id=${car.id}'" onmouseenter="toggleCarCardImage(this, true)" onmouseleave="toggleCarCardImage(this, false)" style="cursor:pointer">
             <div class="car-image">
-                <img src="${Array.isArray(car.images) && car.images.length > 0 ? car.images[0] : (car.image || 'logo.png')}" alt="${car.title}" loading="lazy" onerror="this.src='logo.png'">
-                <span class="car-badge">${car.badge || 'Oferta'}</span>
+                <img src="${primary}" data-default-src="${primary}" data-hover-src="${hover}" alt="${car.title}" loading="lazy" decoding="async" onerror="this.src='logo.png'">
             </div>
             <div class="car-info">
-                <h3 class="car-title">${car.title}</h3>
+                <h3 class="car-title">${capitalizeText(car.title)}</h3>
                 <div class="car-specs">
                     <span class="car-spec">${car.year}</span>
                     <span class="car-spec">${car.km}</span>
@@ -2121,33 +2838,75 @@ function renderFeaturedCarousel() {
 }
 
 function initCarouselControls() {
+    const bindHorizontalControlActivation = (elements, control) => {
+        registerGlobalHorizontalArrowControl();
+        if (!elements || !control) return;
+        const activate = () => { window.__activeHorizontalControl = control; };
+
+        elements.filter(Boolean).forEach((el) => {
+            el.addEventListener('mouseenter', activate);
+            el.addEventListener('pointerdown', activate);
+            el.addEventListener('focus', activate);
+            el.addEventListener('touchstart', activate, { passive: true });
+        });
+    };
+
+    const bindScrollable = (wrapper, prev, next, step) => {
+        if (!wrapper || !prev || !next) return;
+        if (wrapper.dataset.sliderBound === 'true') return;
+
+        wrapper.dataset.sliderBound = 'true';
+        wrapper.setAttribute('tabindex', '0');
+        registerGlobalHorizontalArrowControl();
+
+        const activate = () => {
+            window.__activeHorizontalControl = { prev: prevAction, next: nextAction };
+        };
+
+        const prevAction = () => {
+            activate();
+            wrapper.scrollBy({ left: -step, behavior: 'smooth' });
+        };
+        const nextAction = () => {
+            activate();
+            wrapper.scrollBy({ left: step, behavior: 'smooth' });
+        };
+
+        prev.addEventListener('click', prevAction);
+        next.addEventListener('click', nextAction);
+        bindHorizontalControlActivation([wrapper, prev, next], { prev: prevAction, next: nextAction });
+
+        wrapper.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                prevAction();
+            }
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                nextAction();
+            }
+        });
+
+        wrapper.addEventListener('wheel', (e) => {
+            const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+            if (Math.abs(delta) < 1) return;
+            activate();
+            e.preventDefault();
+            wrapper.scrollBy({ left: delta, behavior: 'auto' });
+        }, { passive: false });
+    };
+
     // Carros em Destaque
     const carWrapper = document.querySelector('.featured-carousel-wrapper');
     const carPrev = document.querySelector('.prev-btn');
     const carNext = document.querySelector('.next-btn');
-
-    if (carWrapper && carPrev && carNext) {
-        carPrev.addEventListener('click', () => {
-            carWrapper.scrollLeft -= 320;
-        });
-        carNext.addEventListener('click', () => {
-            carWrapper.scrollLeft += 320;
-        });
-    }
+    bindScrollable(carWrapper, carPrev, carNext, 320);
 
     // Marcas Populares
     const brandWrapper = document.querySelector('.brands-carousel');
     const brandPrev = document.querySelector('.brand-prev');
     const brandNext = document.querySelector('.brand-next');
-
-    if (brandWrapper && brandPrev && brandNext) {
-        brandPrev.addEventListener('click', () => {
-            brandWrapper.scrollLeft -= 164;
-        });
-        brandNext.addEventListener('click', () => {
-            brandWrapper.scrollLeft += 164;
-        });
-    }
+    bindScrollable(brandWrapper, brandPrev, brandNext, 164);
 }
 
 function renderLifestyleCards() {
@@ -2195,6 +2954,216 @@ function initBannerSlider() {
 
 
 // ===== FEATURE: Vehicle Details Page =====
+function resolveConditionLabel(condition, badge) {
+    if (condition === 'novos') return 'Zero Km';
+    if (condition === 'seminovos') return 'Seminovo';
+    if (condition === 'usados') return 'Usado';
+    if (badge && badge.toLowerCase().includes('luxo')) return 'Destaque';
+    return 'Destaque';
+}
+
+function normalizeBodyType(car) {
+    const explicit = (car.bodyType || car.body || '').toString().trim();
+    if (explicit) return explicit;
+
+    const model = (car.model || '').toLowerCase();
+    const title = (car.title || '').toLowerCase();
+    const blob = `${model} ${title}`;
+
+    if (blob.includes('suv')) return 'SUV';
+    if (blob.includes('sedan')) return 'Sedan';
+    if (blob.includes('hatch')) return 'Hatch';
+    if (blob.includes('pickup') || blob.includes('picape')) return 'Picape';
+    if (blob.includes('cupe')) return 'Coupe';
+    if (blob.includes('moto')) return 'Moto';
+    return car.type === 'motos' ? 'Moto' : 'Automovel';
+}
+
+function resolveBrandLogo(brandName) {
+    if (!brandName || !Array.isArray(brandsData)) return 'logo.png';
+    const target = normalizeBrand(brandName).toLowerCase();
+    const match = brandsData.find((b) => normalizeBrand(b.name).toLowerCase() === target);
+    return match && match.logo ? match.logo : 'logo.png';
+}
+
+function resolveYoutubeEmbedUrl(raw) {
+    if (!raw || typeof raw !== 'string') return '';
+
+    const value = raw.trim();
+    if (!value) return '';
+
+    if (value.includes('/embed/')) return value;
+
+    const watch = value.match(/[?&]v=([^&]+)/);
+    if (watch && watch[1]) return `https://www.youtube.com/embed/${watch[1]}`;
+
+    const short = value.match(/youtu\.be\/([^?&/]+)/);
+    if (short && short[1]) return `https://www.youtube.com/embed/${short[1]}`;
+
+    const shorts = value.match(/youtube\.com\/shorts\/([^?&/]+)/);
+    if (shorts && shorts[1]) return `https://www.youtube.com/embed/${shorts[1]}`;
+
+    return '';
+}
+
+function buildVehicleMiniCard(car, type = 'mini') {
+    const isRelated = type === 'related';
+    const { primary, hover } = resolveCardImagePair(car);
+    if (hover && hover !== primary) prefetchCardImage(hover);
+    const subtitle = `${car.year || '-'} | ${car.km || '-'}`;
+    const tech = [car.engine, car.transmission].filter(Boolean).join(' • ') || 'Especificação disponível';
+
+    return `
+        <article class="${isRelated ? 'vehicle-related-card' : 'vehicle-mini-card'}" onclick="window.location.href='detalhes.html?id=${car.id}'" onmouseenter="toggleCarCardImage(this, true)" onmouseleave="toggleCarCardImage(this, false)">
+            <div class="${isRelated ? 'vehicle-related-image' : 'vehicle-mini-image'}">
+                <img src="${primary}" data-default-src="${primary}" data-hover-src="${hover}" alt="${capitalizeText(car.title)}" loading="lazy" decoding="async" onerror="this.src='logo.png'">
+            </div>
+            <div class="${isRelated ? 'vehicle-related-body' : 'vehicle-mini-body'}">
+                <h3 class="${isRelated ? 'vehicle-related-title' : 'vehicle-mini-title'}">${capitalizeText(car.title)}</h3>
+                <p class="${isRelated ? 'vehicle-related-meta' : 'vehicle-mini-meta'}">${tech}</p>
+                <p class="${isRelated ? 'vehicle-related-price' : 'vehicle-mini-price'}">${formatPrice(car.price)}</p>
+                <div class="${isRelated ? 'vehicle-related-bottom' : 'vehicle-mini-bottom'}">
+                    <span>${subtitle}</span>
+                    ${isRelated ? `<span class="vehicle-related-fav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></span>` : ''}
+                </div>
+            </div>
+        </article>
+    `;
+}
+
+function registerGlobalHorizontalArrowControl() {
+    if (window.__globalHorizontalArrowBound) return;
+    window.__globalHorizontalArrowBound = 'true';
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+
+        const target = e.target;
+        if (
+            target &&
+            (
+                target.tagName === 'INPUT' ||
+                target.tagName === 'TEXTAREA' ||
+                target.tagName === 'SELECT' ||
+                target.isContentEditable
+            )
+        ) {
+            return;
+        }
+
+        const modal = document.getElementById('modalGallery');
+        if (modal && modal.classList.contains('active')) return;
+
+        const control = window.__activeHorizontalControl;
+        if (!control) return;
+
+        e.preventDefault();
+        if (e.key === 'ArrowLeft') control.prev();
+        if (e.key === 'ArrowRight') control.next();
+    });
+}
+
+function bindTrackButtons(trackId, prevId, nextId) {
+    const track = document.getElementById(trackId);
+    const prev = document.getElementById(prevId);
+    const next = document.getElementById(nextId);
+
+    if (!track || !prev || !next) return;
+    if (track.dataset.sliderBound === 'true') return;
+    track.dataset.sliderBound = 'true';
+    track.setAttribute('tabindex', track.getAttribute('tabindex') || '0');
+
+    const getStep = () => {
+        const first = track.firstElementChild;
+        if (!first) return 300;
+        const style = window.getComputedStyle(track);
+        const gap = parseInt(style.columnGap || style.gap || '12', 10) || 12;
+        return first.getBoundingClientRect().width + gap;
+    };
+
+    const activateHorizontalControl = () => {
+        window.__activeHorizontalControl = { prev: prevAction, next: nextAction };
+    };
+
+    const prevAction = () => {
+        activateHorizontalControl();
+        const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+        if (track.scrollLeft <= 4) {
+            track.scrollTo({ left: maxScroll, behavior: 'smooth' });
+            return;
+        }
+        track.scrollBy({ left: -getStep(), behavior: 'smooth' });
+    };
+
+    const nextAction = () => {
+        activateHorizontalControl();
+        const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+        if (track.scrollLeft >= maxScroll - 4) {
+            track.scrollTo({ left: 0, behavior: 'smooth' });
+            return;
+        }
+        track.scrollBy({ left: getStep(), behavior: 'smooth' });
+    };
+
+    prev.onclick = prevAction;
+    next.onclick = nextAction;
+
+    registerGlobalHorizontalArrowControl();
+    [track, prev, next].forEach((el) => {
+        if (!el) return;
+        el.addEventListener('mouseenter', activateHorizontalControl);
+        el.addEventListener('pointerdown', activateHorizontalControl);
+        el.addEventListener('focus', activateHorizontalControl);
+        el.addEventListener('touchstart', activateHorizontalControl, { passive: true });
+    });
+
+    track.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            prevAction();
+        }
+        if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            nextAction();
+        }
+    });
+
+    // Converte scroll vertical do mouse/trackpad em scroll horizontal do carrossel.
+    track.addEventListener('wheel', (e) => {
+        const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+        if (Math.abs(delta) < 1) return;
+        activateHorizontalControl();
+        e.preventDefault();
+        track.scrollBy({ left: delta, behavior: 'auto' });
+    }, { passive: false });
+}
+
+function pushRecentVehicle(id) {
+    let recent = [];
+    try {
+        recent = JSON.parse(localStorage.getItem('souza_recent_vehicles') || '[]');
+    } catch (e) {
+        recent = [];
+    }
+
+    recent = [id, ...recent.filter(item => Number(item) !== Number(id))].slice(0, 12);
+    localStorage.setItem('souza_recent_vehicles', JSON.stringify(recent));
+}
+
+function getRecentVehicles(allCars, currentId) {
+    let recent = [];
+    try {
+        recent = JSON.parse(localStorage.getItem('souza_recent_vehicles') || '[]');
+    } catch (e) {
+        recent = [];
+    }
+
+    return recent
+        .filter(id => Number(id) !== Number(currentId))
+        .map(id => allCars.find(car => Number(car.id) === Number(id)))
+        .filter(Boolean);
+}
+
 async function initDetails() {
     const params = new URLSearchParams(window.location.search);
     const idParam = params.get('id');
@@ -2218,84 +3187,316 @@ async function initDetails() {
             document.body.style.cursor = 'wait';
             car = await DB.getCarById(id);
         } catch (e) {
-            console.error('Erro ao buscar veiculo:', e);
+            console.error('Erro ao buscar veículo:', e);
         } finally {
             document.body.style.cursor = 'default';
         }
     }
 
     if (!car) {
-        document.body.innerHTML = '<div style="color:white; text-align:center; padding:100px; font-family:sans-serif;"><h1>Veículo não encontrado</h1><a href="index.html" style="color:#e65100; text-decoration:none; font-weight:bold;">Voltar para Home</a></div>';
+        document.body.innerHTML = '<div style="color:#222; text-align:center; padding:80px; font-family:\'Plus Jakarta Sans\', sans-serif;"><h1 style="font-weight:500;">Veículo não encontrado</h1><a href="index.html" style="color:#ff9500; text-decoration:none; font-weight:500;">Voltar para Home</a></div>';
         return;
     }
 
-    // Title
     document.title = `${car.title} - Souza Select Car`;
+    pushRecentVehicle(id);
+    recordVehicleView(id);
 
-    // Main Image
-    const mainImg = document.getElementById('detailsMainImg');
-    const thumbGrid = document.getElementById('detailsThumbs');
-    const carImages = Array.isArray(car.images) && car.images.length > 0 ? car.images : [car.image || 'logo.png'];
+    const rawImages = Array.isArray(car.images) && car.images.length > 0 ? car.images : [car.image || 'logo.png'];
+    const heroImages = [...rawImages];
+    while (heroImages.length < 3) heroImages.push(rawImages[heroImages.length % rawImages.length]);
 
-    if (mainImg) {
-        mainImg.src = carImages[0];
-        mainImg.onerror = function () { // Direct handler for initial load
-            this.src = 'logo.png';
-            this.style.opacity = '0.5';
-        };
-    }
+    const mainTitle = `${(car.brand || '').trim()} ${(car.model || '').trim()}`.trim() || capitalizeText(car.title || 'Veículo');
+    const titleLower = (car.title || '').toLowerCase();
+    const mainTitleLower = mainTitle.toLowerCase();
+    const derivedVersion = titleLower.startsWith(mainTitleLower) ? car.title.slice(mainTitle.length).trim() : (car.version || '');
+    const subtitle = derivedVersion || [car.engine, car.transmission, car.fuel].filter(Boolean).join(' • ') || 'Especificação técnica';
+    const ownerPhone = localStorage.getItem('souza_admin_phone') || '5519998383275';
 
-    if (thumbGrid) {
-        thumbGrid.innerHTML = carImages.map((img, idx) => `
-            <img src="${img}" 
-                 onclick="document.getElementById('detailsMainImg').src='${img}'; window.currentModalImageIndex=${idx};" 
-                 onerror="this.onerror=null; this.src='logo.png'; this.style.opacity='0.5';"
-                 loading="lazy"
-                 style="width:80px; height:60px; object-fit:cover; cursor:pointer; border:1px solid ${idx === 0 ? 'var(--primary)' : 'var(--border-color)'}; border-radius:4px;">
+    const heroWindow = document.getElementById('vehicleHeroWindow');
+    const heroTrack = document.getElementById('detailsHeroTrack');
+    const prevMainBtn = document.getElementById('vehiclePrevBtn');
+    const nextMainBtn = document.getElementById('vehicleNextBtn');
+    let heroStartIndex = 0;
+
+    const getVisibleSlides = () => 3;
+
+    heroImages.slice(0, 6).forEach((src) => {
+        const preloadImg = new Image();
+        preloadImg.decoding = 'async';
+        preloadImg.src = src;
+    });
+
+    const renderHeroSlides = () => {
+        if (!heroTrack) return;
+        heroTrack.innerHTML = heroImages.map((img, idx) => `
+            <button type="button" class="vehicle-hero-photo" data-idx="${idx}">
+                <img src="${img}" alt="Foto ${idx + 1} do veículo" loading="${idx < 3 ? 'eager' : 'lazy'}" fetchpriority="${idx === 0 ? 'high' : 'auto'}" onerror="this.onerror=null; this.src='logo.png';">
+            </button>
         `).join('');
+
+        heroTrack.querySelectorAll('.vehicle-hero-photo').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const idx = Number(btn.dataset.idx || '0') % rawImages.length;
+                window.openGallery(idx);
+            });
+        });
+    };
+
+    const updateHeroPosition = () => {
+        if (!heroTrack) return;
+        const visible = getVisibleSlides();
+        const maxStart = Math.max(0, heroImages.length - visible);
+        if (heroStartIndex > maxStart) heroStartIndex = maxStart;
+        const stepPercent = 100 / visible;
+        heroTrack.style.transform = `translateX(-${heroStartIndex * stepPercent}%)`;
+    };
+
+    const stepHero = (direction) => {
+        const visible = getVisibleSlides();
+        const maxStart = Math.max(0, heroImages.length - visible);
+
+        if (direction > 0) {
+            heroStartIndex = heroStartIndex >= maxStart ? 0 : heroStartIndex + 1;
+        } else {
+            heroStartIndex = heroStartIndex <= 0 ? maxStart : heroStartIndex - 1;
+        }
+        updateHeroPosition();
+    };
+
+    renderHeroSlides();
+    updateHeroPosition();
+
+    if (prevMainBtn) prevMainBtn.onclick = () => stepHero(-1);
+    if (nextMainBtn) nextMainBtn.onclick = () => stepHero(1);
+
+    if (heroWindow) {
+        heroWindow.setAttribute('tabindex', '0');
+        heroWindow.addEventListener('wheel', (e) => {
+            const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+            if (Math.abs(delta) < 6) return;
+            e.preventDefault();
+            stepHero(delta > 0 ? 1 : -1);
+        }, { passive: false });
+        heroWindow.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                stepHero(-1);
+            }
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                stepHero(1);
+            }
+        });
     }
 
-    // Modal Gallery Setup
-    window.currentCarImages = carImages;
+    const activateHeroControl = () => {
+        registerGlobalHorizontalArrowControl();
+        window.__activeHorizontalControl = {
+            prev: () => stepHero(-1),
+            next: () => stepHero(1)
+        };
+    };
+    [heroWindow, prevMainBtn, nextMainBtn].forEach((el) => {
+        if (!el) return;
+        el.addEventListener('mouseenter', activateHeroControl);
+        el.addEventListener('pointerdown', activateHeroControl);
+        el.addEventListener('focus', activateHeroControl);
+        el.addEventListener('touchstart', activateHeroControl, { passive: true });
+    });
+    activateHeroControl();
+
+    window.addEventListener('resize', updateHeroPosition);
+
+    window.currentCarImages = rawImages;
     window.currentModalImageIndex = 0;
 
-    if (mainImg) {
-        mainImg.style.cursor = 'zoom-in';
-        mainImg.onclick = () => window.openGallery(window.currentModalImageIndex);
-    }
-
-
-    // --- Info Population ---
     const titleEl = document.getElementById('detailsTitle');
+    const subtitleEl = document.getElementById('detailsSubtitle');
     const priceEl = document.getElementById('detailsPrice');
+    const versionEl = document.getElementById('detailsVersion');
     const yearEl = document.getElementById('detailsYear');
     const kmEl = document.getElementById('detailsKm');
     const fuelEl = document.getElementById('detailsFuel');
     const engineEl = document.getElementById('detailsEngine');
     const transEl = document.getElementById('detailsTransmission');
-    const powerEl = document.getElementById('detailsPower');
     const colorEl = document.getElementById('detailsColor');
+    const brandLogoInlineEl = document.getElementById('detailsBrandLogoInline');
 
-    if (titleEl) titleEl.innerText = car.title;
+    const brandLogo = resolveBrandLogo(car.brand);
+
+    if (brandLogoInlineEl) {
+        brandLogoInlineEl.src = brandLogo;
+        brandLogoInlineEl.alt = `Logo ${car.brand || 'marca'}`;
+        brandLogoInlineEl.onerror = function () { this.src = 'logo.png'; };
+    }
+
+    if (titleEl) titleEl.innerText = capitalizeText(mainTitle);
+    if (subtitleEl) subtitleEl.innerText = subtitle;
     if (priceEl) priceEl.innerText = formatPrice(car.price);
-    if (yearEl) yearEl.innerText = car.year;
-    if (kmEl) kmEl.innerText = car.km;
+    if (versionEl) versionEl.innerText = derivedVersion || subtitle;
+    if (yearEl) yearEl.innerText = car.year || '-';
+    if (kmEl) kmEl.innerText = car.km || '-';
     if (fuelEl) fuelEl.innerText = car.fuel || 'Flex';
     if (engineEl) engineEl.innerText = car.engine || 'N/A';
     if (transEl) transEl.innerText = car.transmission || 'N/A';
-    if (powerEl) powerEl.innerText = car.power || 'N/A';
     if (colorEl) colorEl.innerText = car.color || 'N/A';
 
     const optsContainer = document.getElementById('detailsOptions');
-    if (optsContainer && car.options) {
-        optsContainer.innerHTML = car.options.map(opt => `<li>${opt}</li>`).join('');
+    const fallbackOptions = ['Ar-condicionado', 'Direcao eletrica', 'Multimidia', 'Camera de re', 'Airbags', 'Freios ABS'];
+    const options = Array.isArray(car.options) && car.options.length > 0 ? car.options : fallbackOptions;
+    if (optsContainer) {
+        optsContainer.innerHTML = options.map(opt => `
+            <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 6L9 17l-5-5"></path>
+                </svg>
+                ${opt}
+            </li>
+        `).join('');
     }
 
-    const descEl = document.getElementById('detailsDescription');
-    if (descEl) descEl.innerText = car.description || 'Sem descrição adicional.';
+    const videoFrame = document.getElementById('detailsVideoFrame');
+    const videoWrap = document.getElementById('detailsVideoWrap');
+    const mosaicWrap = document.getElementById('detailsMosaicWrap');
+    const mediaTitle = document.getElementById('detailsMediaTitle');
+    const mediaNote = document.getElementById('detailsMediaNote');
+    const mediaVideoUrl = resolveYoutubeEmbedUrl(car.videoUrl || car.video || getVehicleVideoUrlById(car.id));
 
-    const btnInt = document.getElementById('btnInterest');
-    if (btnInt) btnInt.onclick = () => whatsappInterest(car.title);
+    if (mediaVideoUrl) {
+        if (videoFrame) videoFrame.src = mediaVideoUrl;
+        if (videoWrap) videoWrap.hidden = false;
+        if (mosaicWrap) {
+            mosaicWrap.hidden = true;
+            mosaicWrap.innerHTML = '';
+        }
+        if (mediaTitle) mediaTitle.textContent = 'Assista ao Vídeo';
+        if (mediaNote) mediaNote.hidden = true;
+    } else {
+        const mosaicImages = (rawImages && rawImages.length ? rawImages : ['logo.png']).filter(Boolean);
+        const maxTiles = 8;
+        const visibleImages = mosaicImages.slice(0, maxTiles);
+        const overflow = Math.max(0, mosaicImages.length - maxTiles);
+
+        if (videoFrame) videoFrame.src = '';
+        if (videoWrap) videoWrap.hidden = true;
+        if (mosaicWrap) {
+            const baseTiles = visibleImages.map((src, index) => `
+                <button type="button" class="vehicle-mosaic-tile" data-mosaic-index="${index}">
+                    <img src="${src}" alt="Foto ${index + 1} do veículo" loading="lazy" decoding="async" onerror="this.onerror=null; this.src='logo.png';">
+                </button>
+            `);
+            if (overflow > 0 && baseTiles.length > 0) {
+                const lastIndex = baseTiles.length - 1;
+                baseTiles[lastIndex] = `
+                    <button type="button" class="vehicle-mosaic-tile vehicle-mosaic-overflow" data-mosaic-index="${lastIndex}">
+                        <img src="${visibleImages[lastIndex]}" alt="Mais fotos do veículo" loading="lazy" decoding="async" onerror="this.onerror=null; this.src='logo.png';">
+                        <span>+${overflow}</span>
+                    </button>
+                `;
+            }
+            mosaicWrap.innerHTML = baseTiles.join('');
+            mosaicWrap.hidden = false;
+            mosaicWrap.querySelectorAll('[data-mosaic-index]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const idx = Number(btn.getAttribute('data-mosaic-index') || '0');
+                    window.openGallery(idx);
+                });
+            });
+        }
+        if (mediaTitle) mediaTitle.textContent = 'Galeria de Fotos';
+        if (mediaNote) {
+            mediaNote.textContent = 'Sem vídeo cadastrado para este veículo.';
+            mediaNote.hidden = false;
+        }
+    }
+
+    const currentUrl = window.location.href;
+    const shareText = `${mainTitle} por ${formatPrice(car.price)}`;
+    const encodedUrl = encodeURIComponent(currentUrl);
+    const encodedText = encodeURIComponent(shareText);
+
+    const shareWhatsapp = document.getElementById('shareWhatsapp');
+    const shareFacebook = document.getElementById('shareFacebook');
+    const shareInstagram = document.getElementById('shareInstagram');
+    const shareLinkedin = document.getElementById('shareLinkedin');
+    const instagramUrl = localStorage.getItem('souza_instagram_url') || 'https://www.instagram.com/';
+
+    if (shareWhatsapp) shareWhatsapp.href = `https://wa.me/?text=${encodedText}%20${encodedUrl}`;
+    if (shareFacebook) shareFacebook.href = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+    if (shareInstagram) shareInstagram.href = instagramUrl;
+    if (shareLinkedin) shareLinkedin.href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+
+    const addressEl = document.getElementById('detailsAddress');
+    const mapFrameEl = document.getElementById('detailsMapFrame');
+    let currentAddress = 'Rua 6, 3212, Santana, Rio Claro/SP';
+    if (addressEl) {
+        const savedAddress = localStorage.getItem('souza_store_address');
+        if (savedAddress && savedAddress.trim()) {
+            currentAddress = savedAddress.trim();
+        }
+        addressEl.innerText = currentAddress;
+    }
+    if (mapFrameEl) {
+        mapFrameEl.src = `https://www.google.com/maps?q=${encodeURIComponent(currentAddress)}&output=embed`;
+    }
+
+    const interestBtn = document.getElementById('btnInterest');
+    if (interestBtn) {
+        interestBtn.addEventListener('click', () => {
+            const message = `Olá! Tenho interesse no ${mainTitle} (${car.year || ''}) por ${formatPrice(car.price)}.`;
+            window.open(`https://wa.me/${ownerPhone}?text=${encodeURIComponent(message)}`, '_blank');
+        });
+    }
+
+    const favBtn = document.getElementById('detailsFavBtn');
+    let favorites = [];
+    try {
+        favorites = JSON.parse(localStorage.getItem('souza_favorites') || '[]');
+    } catch (e) {
+        favorites = [];
+    }
+
+    const refreshFavoriteButton = () => {
+        if (!favBtn) return;
+        favBtn.classList.toggle('active', favorites.includes(Number(id)));
+    };
+
+    refreshFavoriteButton();
+
+    if (favBtn) {
+        favBtn.onclick = () => {
+            const targetId = Number(id);
+            if (favorites.includes(targetId)) {
+                favorites = favorites.filter(item => item !== targetId);
+            } else {
+                favorites.push(targetId);
+            }
+            localStorage.setItem('souza_favorites', JSON.stringify(favorites));
+            refreshFavoriteButton();
+        };
+    }
+
+    const allCars = Array.isArray(carsData) && carsData.length > 0 ? carsData : (await DB.getAllCars());
+    const relatedTrack = document.getElementById('relatedTrack');
+
+    if (relatedTrack) {
+        const relatedCars = allCars
+            .filter(item => Number(item.id) !== Number(id))
+            .filter(item => normalizeBrand(item.brand) === normalizeBrand(car.brand) || item.type === car.type)
+            .slice(0, 8);
+
+        const baseRelated = relatedCars.length ? relatedCars : allCars.filter(item => Number(item.id) !== Number(id)).slice(0, 8);
+        const finalRelated = [...baseRelated];
+        let cursor = 0;
+        while (finalRelated.length < 10 && baseRelated.length > 0) {
+            finalRelated.push(baseRelated[cursor % baseRelated.length]);
+            cursor += 1;
+        }
+        relatedTrack.innerHTML = finalRelated.map(item => buildVehicleMiniCard(item, 'related')).join('');
+    }
+
+    bindTrackButtons('relatedTrack', 'relatedPrevBtn', 'relatedNextBtn');
 }
 
 // (Código antigo da galeria removido para evitar duplicidade - Versão Enhanced abaixo)
@@ -2409,14 +3610,34 @@ function whatsappEvaluation() {
 
 // Update Static WhatsApp Links
 function updateWhatsAppLinks() {
-    const phone = localStorage.getItem('souza_admin_phone') || "5519998383275";
-    document.querySelectorAll('a[href*="whatsapp"]').forEach(link => {
-        let href = link.href;
-        // Simple replace for common patterns
-        if (href.includes('5519998383275')) {
-            link.href = href.replace('5519998383275', phone);
-        } else if (href.includes('5519999999999')) { // Placeholder found in HTML
-            link.href = href.replace('5519999999999', phone);
+    const phone = (localStorage.getItem('souza_admin_phone') || '5519998383275').replace(/\D/g, '');
+    const links = document.querySelectorAll('a[href*="wa.me"], a[href*="whatsapp.com"], a[href*="api.whatsapp.com"], a[href*="5519998383275"], a[href*="5519999999999"]');
+
+    links.forEach((link) => {
+        const rawHref = link.getAttribute('href') || '';
+        if (!rawHref || rawHref.startsWith('#') || rawHref.startsWith('javascript:')) return;
+
+        try {
+            const url = new URL(rawHref, window.location.origin);
+            const host = (url.hostname || '').toLowerCase();
+
+            if (host.includes('wa.me')) {
+                url.pathname = `/${phone}`;
+                link.setAttribute('href', url.toString());
+                return;
+            }
+
+            if (host.includes('whatsapp.com')) {
+                url.searchParams.set('phone', phone);
+                link.setAttribute('href', url.toString());
+                return;
+            }
+
+            const replaced = rawHref.replace(/55\d{10,11}/g, phone);
+            link.setAttribute('href', replaced);
+        } catch (err) {
+            const replaced = rawHref.replace(/55\d{10,11}/g, phone);
+            link.setAttribute('href', replaced);
         }
     });
 }
@@ -2429,6 +3650,7 @@ function updateWhatsAppLinks() {
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         console.log("Inicializando aplicação...");
+        recordSiteAccess();
 
         // Deteccao de Pagina para Performance
         const isDetailsPage = !!document.getElementById('detailsTitle');
@@ -2442,17 +3664,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 1. Carrega dados (Logica Otimizada)
         if (isDetailsPage) {
-            console.log("🚀 [Init] Modo Detalhes (Carregamento Rápido Unico)");
+            console.log("[Init] Modo Detalhes (Carregamento Rápido Unico)");
             // initDetails agora busca seu proprio carro se necessario
             await initDetails();
             // Carrega o resto em background sem travar a UI
             refreshAppData().then(() => {
-                console.log("📦 [Background] Dados completos carregados");
+                console.log("[Background] Dados completos carregados");
                 // renderBrands(); // Opcional no background
             });
         } else {
             // Home ou Estoque ou Admin - Precisa de tudo
-            console.log("🚀 [Init] Carregando aplicação completa...");
+            console.log("[Init] Carregando aplicação completa...");
             await refreshAppData();
 
             // 3. Page specific inits (pos-carga)
@@ -2522,160 +3744,128 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
 
-// --- OVERRIDE: WhatsApp Parser (Smart Fill Fixed) ---
+// Mantido para compatibilidade com layouts antigos que ainda podem chamar essa função.
 window.parseWhatsAppText = () => {
     const textArea = document.getElementById('whatsappPasteArea');
     const text = textArea ? textArea.value : '';
 
     if (!text || text.trim().length < 5) {
-        alert("Cole o texto do anúncio primeiro!");
+        showToast('Cole o texto do anúncio primeiro.');
         return;
     }
 
     const fullText = text.toLowerCase();
-    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    let foundCount = 0;
 
-    // 1. Preço (Smart Regex)
     const priceMatch = text.match(/(?:r\$|valor|por|investimento)\s?([\d.,]+)/i);
     if (priceMatch) {
         const val = priceMatch[1].replace(/\./g, '').replace(',', '.');
         const priceInput = document.getElementById('priceInput');
-        if (priceInput) priceInput.value = parseFloat(val);
-    }
-
-    // 2. KM (Smart Regex)
-    const kmMatch = text.match(/(\d{1,3}(?:\.?\d{3})*)\s?(?:km|quilômetros|rodados)/i);
-    if (kmMatch) {
-        const k = document.querySelector('input[name="km"]');
-        if (k) k.value = kmMatch[1].replace(/\./g, '') + ' km';
-    }
-
-    // 3. Ano (Smart Regex)
-    const yearMatch = text.match(/(?:ano|modelo)?\s?(20\d{2}(?:\/20\d{2}|-20\d{2})?)/i);
-    if (yearMatch) {
-        if (!window.isYearManual) window.toggleManualYear();
-        const y = document.getElementById('yearManualInput');
-        if (y) y.value = yearMatch[1];
-    }
-
-    // 4. Marca e Modelo (Primeira Linha Heurística)
-    if (lines.length > 0) {
-        const firstLine = lines[0];
-        // Remove emojis comuns
-        const cleanFirstLine = firstLine.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]|[\u{1F1E0}-\u{1F1FF}]/gu, '').trim();
-        const parts = cleanFirstLine.split(' ');
-
-        if (parts.length >= 1) {
-            if (!window.isBrandManual) window.toggleManualBrand();
-            const b = document.getElementById('brandManualInput');
-            if (b) b.value = normalizeBrand(parts[0]);
-
-            if (parts.length >= 2) {
-                if (!window.isModelManual) window.toggleManualModel();
-                const m = document.getElementById('modelManualInput');
-                if (m) m.value = parts.slice(1).join(' ');
-            }
+        if (priceInput) {
+            priceInput.value = parseFloat(val);
+            foundCount += 1;
         }
     }
 
-    // 5. Motorização e Câmbio
+    const kmMatch = text.match(/(\d{1,3}(?:\.?\d{3})*)\s?(?:km|quilometros|rodados)/i);
+    if (kmMatch) {
+        const kmInput = document.querySelector('input[name="km"]');
+        if (kmInput) {
+            kmInput.value = `${kmMatch[1].replace(/\./g, '')} km`;
+            foundCount += 1;
+        }
+    }
+
     const engineMatch = text.match(/(\d\.\d(?:\s?turbo|v6|v8|v10)?)/i);
     if (engineMatch && engineMatch[1]) {
-        const eng = document.querySelector('input[name="engine"]');
-        if (eng) eng.value = engineMatch[1].toUpperCase();
+        const engineInput = document.querySelector('input[name="engine"]');
+        if (engineInput) {
+            engineInput.value = engineMatch[1].toUpperCase();
+            foundCount += 1;
+        }
     }
 
-    const transmissionMatch = text.match(/(automático|automatico|aut\.|manual|cvt|dualogic|dsg)/i);
+    const transmissionMatch = text.match(/(automatico|aut\.|manual|cvt|dualogic|dsg)/i);
     if (transmissionMatch && transmissionMatch[1]) {
-        const trans = document.querySelector('input[name="transmission"]');
-        if (trans) trans.value = transmissionMatch[1].charAt(0).toUpperCase() + transmissionMatch[1].slice(1).toLowerCase();
+        const transmissionInput = document.querySelector('input[name="transmission"]');
+        if (transmissionInput) {
+            const val = transmissionMatch[1].replace('.', '');
+            transmissionInput.value = val.charAt(0).toUpperCase() + val.slice(1).toLowerCase();
+            foundCount += 1;
+        }
     }
 
-    // 5.1 Combustível
-    const fuelMatch = text.match(/(flex|álcool|alcool|gasolina|diesel|híbrido|hibrido|elétrico|eletrico)/i);
+    const fuelMatch = text.match(/(flex|alcool|gasolina|diesel|hibrido|eletrico)/i);
     if (fuelMatch && fuelMatch[1]) {
         const fuel = document.querySelector('select[name="fuel"]') || document.getElementById('fuel');
         if (fuel) {
             const val = fuelMatch[1].toLowerCase();
             if (val.includes('flex')) fuel.value = 'Flex';
-            else if (val.includes('alcool')) fuel.value = 'Álcool';
+            else if (val.includes('alcool')) fuel.value = 'Alcool';
             else if (val.includes('gasolina')) fuel.value = 'Gasolina';
             else if (val.includes('diesel')) fuel.value = 'Diesel';
+            foundCount += 1;
         }
     }
 
-    // 5.2 Conservação (Novo/Seminovo)
     const conditionMatch = text.match(/(novo|0km|zero|seminovo|usado)/i);
     if (conditionMatch && conditionMatch[1]) {
         const cond = document.querySelector('select[name="condition"]') || document.getElementById('condition');
         if (cond) {
             const val = conditionMatch[1].toLowerCase();
-            if (val.includes('novo') || val.includes('0km') || val.includes('zero')) cond.value = 'novos';
-            else cond.value = 'seminovos';
+            cond.value = (val.includes('novo') || val.includes('0km') || val.includes('zero')) ? 'novos' : 'seminovos';
+            foundCount += 1;
         }
     }
 
-    // 6. Descrição (Geral)
     const descInput = document.getElementById('descriptionInput');
-    if (descInput) descInput.value = text;
+    if (descInput) {
+        descInput.value = text;
+    }
 
-    // 7. Opcionais (Checkboxes)
     const inputs = document.getElementsByName('carOptions');
-    let foundCount = 0;
-
-    // Uncheck all first
-    for (let inp of inputs) inp.checked = false;
-
     const keywordMap = {
-        'Ar Condicionado': ['ar condicionado', 'ar-condicionado', 'ar con', 'climatizador'],
-        'Direção': ['direção', 'dh', 'direcao', 'assistida'],
-        'Vidro': ['vidro', 'trio', 'vidros'],
-        'Trava': ['trava', 'trio', 'travas'],
-        'Alarme': ['alarme', 'trio', 'segurança'],
-        'Som': ['som', 'multimídia', 'multimidia', 'mp3', 'usb', 'bluetooth', 'tela'],
+        'Ar Condicionado': ['ar condicionado', 'ar-condicionado', 'climatizador'],
+        'Direcao': ['direcao', 'assistida', 'hidraulica'],
+        'Vidro': ['vidro', 'vidros'],
+        'Trava': ['trava', 'travas'],
+        'Alarme': ['alarme', 'seguranca'],
+        'Som': ['som', 'multimidia', 'mp3', 'usb', 'bluetooth'],
         'Couro': ['couro', 'revestimento'],
-        'Teto': ['teto solar', 'panorâmico', 'panoramico'],
-        'Automático': ['automático', 'automatico', 'câmbio aut', 'at6', 'at9', 'at'],
-        '4x4': ['4x4', 'awd', 'tração', 'diesel'],
+        'Teto': ['teto solar', 'panoramico'],
+        'Automatico': ['automatico', 'cambio aut', 'at6', 'at9'],
+        '4x4': ['4x4', 'awd', 'tracao'],
         'Sensor': ['sensor', 'estacionamento', 'park'],
-        'Câmera': ['câmera', 'camera', 'ré'],
-        'LED': ['led', 'xenon', 'iluminação'],
+        'Camera': ['camera', 're'],
+        'LED': ['led', 'xenon'],
         'ABS': ['abs', 'freios'],
-        'Airbag': ['airbag', 'air bag', 'bolsas']
+        'Airbag': ['airbag', 'air bag']
     };
 
-    for (let inp of inputs) {
-        let labelText = inp.parentElement ? inp.parentElement.innerText.toLowerCase().trim() : inp.value.toLowerCase().trim();
-
-        // Match by label
+    for (const inp of inputs) inp.checked = false;
+    for (const inp of inputs) {
+        const labelText = (inp.parentElement ? inp.parentElement.innerText : inp.value).toLowerCase().trim();
         if (fullText.includes(labelText)) {
             inp.checked = true;
-            foundCount++;
             continue;
         }
-
-        // Match by keyword map
-        for (let [key, synonyms] of Object.entries(keywordMap)) {
-            if (labelText.includes(key.toLowerCase())) {
-                if (synonyms.some(s => fullText.includes(s))) {
-                    inp.checked = true;
-                    foundCount++;
-                    break;
-                }
+        for (const [key, synonyms] of Object.entries(keywordMap)) {
+            if (!labelText.includes(key.toLowerCase())) continue;
+            if (synonyms.some(s => fullText.includes(s))) {
+                inp.checked = true;
+                break;
             }
         }
     }
 
     if (window.updateOptionsSummary) window.updateOptionsSummary();
-
     const feedback = document.getElementById('pasteStatus');
     if (feedback) {
         feedback.style.display = 'block';
         feedback.style.color = '#4caf50';
-        feedback.innerText = `✅ Sucesso! Detectamos Marca/Modelo/Ano e ${foundCount} opcionais.`;
+        feedback.innerText = `Leitura aplicada. Campos preenchidos: ${foundCount}.`;
     }
-
-    showToast("🤖 Inteligência de leitura aplicada!");
+    showToast('Leitura do texto concluida.');
 };
 
 // --- HOME PAGE SEARCH LOGIC ---
@@ -2689,14 +3879,14 @@ function initHomeFilters() {
 
     if (!homeBrandSelect) return;
 
-    console.log("🏠 [HomeFilters] Inicializando filtros da Home...");
+    console.log("[HomeFilters] Inicializando filtros da Home...");
 
     // Expor função de update para o refreshAppData
     window.updateHomeFilters = function () {
         const pool = carsData || [];
         if (pool.length === 0) return; // Aguarda dados reais
 
-        console.log('🏠 [HomeFilters] Populando marcas a partir de', pool.length, 'veículos');
+        console.log('[HomeFilters] Populando marcas a partir de', pool.length, 'veículos');
 
         const type = getActiveType();
         // Filtro inteligente: Se o carro não tiver tipo, tratamos como 'carros' (default)
@@ -2806,7 +3996,7 @@ function initHomeFilters() {
             if (homeYearSelect && homeYearSelect.value) params.append('year', homeYearSelect.value);
             if (homePriceSelect && homePriceSelect.value) params.append('priceMax', homePriceSelect.value);
 
-            console.log('🔍 [HomeSearch] Navegando:', params.toString());
+            console.log('[HomeSearch] Navegando:', params.toString());
             window.location.href = `veiculos.html?${params.toString()}`;
         };
     }
@@ -2816,5 +4006,3 @@ function initHomeFilters() {
         window.updateHomeFilters();
     }
 }
-
-

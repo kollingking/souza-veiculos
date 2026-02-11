@@ -4,18 +4,23 @@
 <head>
     <title>Limpar BYD - Souza Select Car</title>
     <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
     <style>
         body {
-            background: #000;
-            color: #fff;
-            font-family: Arial;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             padding: 40px;
             text-align: center;
         }
 
         button {
-            background: #d4af37;
-            color: #000;
+            background: var(--primary);
+            color: #fff;
             border: none;
             padding: 15px 30px;
             border-radius: 6px;
@@ -26,7 +31,7 @@
         }
 
         button:hover {
-            background: #c09d2f;
+            background: var(--primary-dark);
         }
 
         .danger {
@@ -39,7 +44,7 @@
         }
 
         .log {
-            background: #1a1a1a;
+            background: var(--bg-primary);
             padding: 20px;
             margin: 20px auto;
             max-width: 600px;
@@ -47,18 +52,19 @@
             text-align: left;
             font-family: monospace;
             font-size: 14px;
+            border: 1px solid var(--border-color);
         }
     </style>
 </head>
 
 <body>
-    <h1>🧹 Utilitário de Limpeza - Souza Select Car</h1>
+    <h1>Utilitário de Limpeza - Souza Select Car</h1>
     <p>Use este utilitário para remover veículos específicos do sistema</p>
 
     <div class="log" id="log">Aguardando ação...</div>
 
     <button onclick="removeBYD()">Remover todos os BYD</button>
-    <button class="danger" onclick="clearAll()">⚠️ Apagar TUDO (Reset Completo)</button>
+    <button class="danger" onclick="clearAll()">Apagar TUDO (Reset Completo)</button>
     <br><br>
     <button onclick="window.location.href='admin.html'">← Voltar ao Admin</button>
 
@@ -69,24 +75,24 @@
         }
 
         function removeBYD() {
-            log('🔍 Buscando carros...');
+            log('Buscando carros...');
 
             let cars = [];
             try {
                 cars = JSON.parse(localStorage.getItem('souza_cars')) || [];
             } catch (e) {
-                log('❌ Erro ao ler dados: ' + e.message);
+                log('Erro ao ler dados: ' + e.message);
                 return;
             }
 
             const before = cars.length;
-            log(`📊 Total de carros: ${before}`);
+            log(`Total de carros: ${before}`);
 
             // Remove BYD
             const filtered = cars.filter(car => {
                 const isBYD = car.brand && car.brand.toLowerCase().includes('byd');
                 if (isBYD) {
-                    log(`🗑️ Removendo: ${car.title || car.brand + ' ' + car.model} (ID: ${car.id})`);
+                    log(`Removendo: ${car.title || car.brand + ' ' + car.model} (ID: ${car.id})`);
                 }
                 return !isBYD;
             });
@@ -95,18 +101,18 @@
 
             if (removed > 0) {
                 localStorage.setItem('souza_cars', JSON.stringify(filtered));
-                log(`✅ Removidos ${removed} veículo(s) BYD`);
-                log(`📊 Total restante: ${filtered.length}`);
+                log(`Removidos ${removed} veículo(s) BYD`);
+                log(`Total restante: ${filtered.length}`);
                 setTimeout(() => {
                     alert(`Removidos ${removed} BYD(s)! Recarregue o admin.`);
                 }, 500);
             } else {
-                log('ℹ️ Nenhum BYD encontrado');
+                log('Nenhum BYD encontrado');
             }
         }
 
         function clearAll() {
-            if (!confirm('⚠️ ATENÇÃO! Isso vai apagar TODOS os veículos. Continuar?')) {
+            if (!confirm('ATENÇÃO! Isso vai apagar TODOS os veículos. Continuar?')) {
                 return;
             }
             if (!confirm('Tem CERTEZA? Esta ação não pode ser desfeita!')) {
@@ -114,7 +120,7 @@
             }
 
             localStorage.removeItem('souza_cars');
-            log('🗑️ TODOS os carros foram removidos!');
+            log('TODOS os carros foram removidos!');
             setTimeout(() => {
                 alert('Base de dados limpa! Redirecionando...');
                 window.location.href = 'admin.html';
