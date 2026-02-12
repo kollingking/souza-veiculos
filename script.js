@@ -116,7 +116,14 @@ const DB = {
         // 3. Merge Logic (Priority to Online for full details/images)
         const mergedMap = new Map();
         localCars.forEach(c => mergedMap.set(c.id, c));
-        onlineCars.forEach(c => mergedMap.set(c.id, c));
+        onlineCars.forEach(c => {
+            const local = mergedMap.get(c.id);
+            // Fallback: Se o online não tem fotos mas o local tem, mantém as locais
+            if (local && (!c.images || c.images.length === 0) && (local.images && local.images.length > 0)) {
+                c.images = local.images;
+            }
+            mergedMap.set(c.id, c);
+        });
 
         const finalData = Array.from(mergedMap.values());
 
@@ -642,11 +649,17 @@ function whatsappInterest(carTitle) {
 }
 
 function resolveCardImagePair(car) {
-    const images = Array.isArray(car.images) && car.images.length > 0
-        ? car.images
-        : [car.image || 'logo.png'];
-    const primary = images[0] || car.image || 'logo.png';
-    const hover = images[1] || primary;
+    if (!car) return { primary: 'logo.png', hover: 'logo.png' };
+
+    // Garante que images seja um array válido
+    const images = (Array.isArray(car.images) ? car.images : []).filter(img => img && typeof img === 'string' && img.length > 5);
+
+    // Fallback para propriedade .image (legado ou backup)
+    const backupImage = car.image && typeof car.image === 'string' && car.image.length > 5 ? car.image : 'logo.png';
+
+    const primary = images.length > 0 ? images[0] : backupImage;
+    const hover = images.length > 1 ? images[1] : primary;
+
     return { primary, hover };
 }
 
