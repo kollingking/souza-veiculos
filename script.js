@@ -2259,6 +2259,7 @@ function initAdmin() {
         const fuelFilter = document.getElementById('stockFilterFuel');
         const yearMinInput = document.getElementById('stockYearMin');
         const yearMaxInput = document.getElementById('stockYearMax');
+        const priceMinInput = document.getElementById('stockPriceMin');
         const priceMaxInput = document.getElementById('stockPriceMax');
         const typeFilter = document.getElementById('stockFilterType');
         const clearBtn = document.getElementById('clearStockFilters');
