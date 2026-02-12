@@ -1,5 +1,125 @@
 // ===== Data Management (LocalStorage + Default) =====
 const defaultCars = [];
+const SITE_OFFICIAL_ADDRESS = 'Av. M15, n. 784 - Rio Claro/SP - CEP 13505-320';
+const SITE_OFFICIAL_PHONE = '5519999313717';
+
+function normalizePhoneForWhatsApp(rawInput, fallback = SITE_OFFICIAL_PHONE) {
+    const digits = (rawInput || '').toString().replace(/\D/g, '');
+
+    // Se vazio, retorna fallback
+    if (!digits) return fallback;
+
+    // Se já começa com 55, retorna como está
+    if (digits.startsWith('55')) {
+        // Garante que tem pelo menos 12 dígitos (55 + DDD + número de 8 ou 9)
+        if (digits.length >= 12) return digits;
+    }
+
+    // Se começa com 0, remove o zero inicial (formato antigo)
+    if (digits.startsWith('0')) {
+        const cleaned = digits.substring(1);
+        return `55${cleaned}`;
+    }
+
+    // Para qualquer outro caso, adiciona 55 no início
+    return `55${digits}`;
+}
+
+function normalizeStoreAddressInput(value) {
+    const input = (value || '').toString().trim();
+    if (!input) return SITE_OFFICIAL_ADDRESS;
+    if (/Rua\s*6,\s*3212|Rua\s+Doutor\s+Eloi\s+Chaves|Av\.?\s*40,\s*935|Av\s*M15\s*N784|Av\.?\s*M15/i.test(input)) {
+        return SITE_OFFICIAL_ADDRESS;
+    }
+    return input;
+}
+
+function enforceOfficialAddressInStorage() {
+    const savedAddress = localStorage.getItem('souza_store_address') || '';
+    const normalizedAddress = normalizeStoreAddressInput(savedAddress);
+    if (savedAddress !== normalizedAddress) {
+        localStorage.setItem('souza_store_address', normalizedAddress);
+    }
+
+    try {
+        const companyInfo = JSON.parse(localStorage.getItem('souza_company_info') || '{}');
+        if (!companyInfo || typeof companyInfo !== 'object') return;
+        const normalizedCompanyAddress = normalizeStoreAddressInput(companyInfo.address || '');
+        if (companyInfo.address !== normalizedCompanyAddress) {
+            companyInfo.address = normalizedCompanyAddress;
+            localStorage.setItem('souza_company_info', JSON.stringify(companyInfo));
+        }
+    } catch (e) {
+        // Mantem execucao normal mesmo que o JSON salvo esteja invalido.
+    }
+}
+
+function enforceOfficialPhoneInStorage() {
+    const savedPhone = localStorage.getItem('souza_admin_phone') || '';
+    const normalized = normalizePhoneForWhatsApp(savedPhone, SITE_OFFICIAL_PHONE);
+    if (!savedPhone || savedPhone === '5519998383275' || savedPhone === '5519999999999' || savedPhone !== normalized) {
+        localStorage.setItem('souza_admin_phone', normalized);
+    }
+}
+
+function formatPhoneDisplay(phoneDigits) {
+    const digits = (phoneDigits || '').replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.length === 13 && digits.startsWith('55')) {
+        return `+55 ${digits.slice(2, 4)} ${digits.slice(4, 9)}-${digits.slice(9)}`;
+    }
+    if (digits.length === 11) {
+        return `+55 ${digits.slice(0, 2)} ${digits.slice(2, 7)}-${digits.slice(7)}`;
+    }
+    return digits;
+}
+
+function updatePhoneDisplays() {
+    const phoneDigits = (localStorage.getItem('souza_admin_phone') || SITE_OFFICIAL_PHONE).replace(/\D/g, '');
+    const display = formatPhoneDisplay(phoneDigits);
+    document.querySelectorAll('.js-admin-phone-display').forEach((el) => {
+        el.textContent = display;
+    });
+}
+
+function looksLikeMojibake(text) {
+    if (!text) return false;
+    return /Ã[\x80-\xBF]|Ãƒ|Ã¢|â€¢|â€“|â€”|ï¿½|�/.test(text);
+}
+
+function fixMojibakeText(text) {
+    if (!looksLikeMojibake(text)) return text;
+    try {
+        return decodeURIComponent(escape(text));
+    } catch (e) {
+        return text;
+    }
+}
+
+function sanitizeMojibakeTextNodes(root = document.body) {
+    if (!root) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+            if (!node || !node.nodeValue) return NodeFilter.FILTER_REJECT;
+            const parent = node.parentElement;
+            if (!parent) return NodeFilter.FILTER_REJECT;
+            const blockedTag = /^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA|INPUT)$/i.test(parent.tagName);
+            if (blockedTag) return NodeFilter.FILTER_REJECT;
+            return looksLikeMojibake(node.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+        }
+    });
+
+    const nodes = [];
+    let current = walker.nextNode();
+    while (current) {
+        nodes.push(current);
+        current = walker.nextNode();
+    }
+
+    nodes.forEach((node) => {
+        node.nodeValue = fixMojibakeText(node.nodeValue);
+    });
+}
 
 // ===== Brand Normalization System =====
 const BRAND_ALIASES = {
@@ -73,6 +193,8 @@ function normalizeBrand(input) {
 // Preparando a "cama" para o banco de dados online (Supabase)
 const SUPABASE_URL = 'https://ltymsdjeylwhgqtlsyaj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0eW1zZGpleWx3aGdxdGxzeWFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MTU4MDQsImV4cCI6MjA4NTk5MTgwNH0.L_7Vyv3ZqC-pSBwVVt0sKD8EtBtCsb4o_zyX0RiMWXQ';
+const CARS_CACHE_KEY = 'souza_cars_cache_v1';
+const CARS_CACHE_TTL_MS = 2 * 60 * 1000;
 
 let supabaseClient = null;
 try {
@@ -86,29 +208,38 @@ try {
 const DB = {
     // Busca todos os carros
     async getAllCars() {
+        try {
+            const cachedPayload = JSON.parse(sessionStorage.getItem(CARS_CACHE_KEY) || 'null');
+            if (
+                cachedPayload &&
+                Array.isArray(cachedPayload.data) &&
+                Number.isFinite(cachedPayload.ts) &&
+                (Date.now() - cachedPayload.ts) < CARS_CACHE_TTL_MS
+            ) {
+                return cachedPayload.data;
+            }
+        } catch (e) { }
+
         let onlineCars = [];
         let localCars = [];
 
-        // 1. Load from Supabase (Priority Source of Truth) with 5s Timeout Safety
+        // 1. Load from Supabase (Priority Source of Truth)
         if (supabaseClient) {
             try {
-                const supabasePromise = supabaseClient.from('veiculos').select('*').order('created_at', { ascending: false });
-                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Supabase Timeout')), 5000));
-
-                const { data, error } = await Promise.race([supabasePromise, timeoutPromise]);
-
+                const queryPromise = supabaseClient.from('veiculos').select('*').order('created_at', { ascending: false });
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('supabase-timeout')), 2800);
+                });
+                const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
                 if (!error && data) {
                     onlineCars = data.map(c => ({ ...c, createdAt: c.created_at || c.createdAt }));
-                    // Sincroniza localmente versões leves para busca rápida offline
+                    // Clean local storage if online is healthy to prevent "zombie" cars
                     if (onlineCars.length > 0) {
-                        const localCache = onlineCars.map(c => ({
-                            ...c,
-                            images: (c.images || []).slice(0, 1)
-                        }));
-                        localStorage.setItem('souza_cars', JSON.stringify(localCache));
+                        const sanitizedLocal = onlineCars.map(c => ({ ...c, images: (c.images || []).slice(0, 1) })); // Keep only 1 thumb locally
+                        localStorage.setItem('souza_cars', JSON.stringify(sanitizedLocal));
                     }
                 }
-            } catch (e) { console.warn("Supabase load skipped (offline or timeout):", e.message); }
+            } catch (e) { console.error("Supabase load fail:", e); }
         }
 
         // 2. Load from LocalStorage
@@ -117,47 +248,47 @@ const DB = {
             localCars = Array.isArray(stored) ? stored : [];
         } catch (e) { }
 
-        // 3. Merge Logic (Priority to Online for full details/images)
+        // 3. Merge Logic (Priority to Online)
         const mergedMap = new Map();
         localCars.forEach(c => mergedMap.set(c.id, c));
-        onlineCars.forEach(c => {
-            const local = mergedMap.get(c.id);
-            // Fallback: Se o online não tem fotos mas o local tem, mantém as locais
-            if (local && (!c.images || c.images.length === 0) && (local.images && local.images.length > 0)) {
-                c.images = local.images;
-            }
-            mergedMap.set(c.id, c);
-        });
+        onlineCars.forEach(c => mergedMap.set(c.id, c));
 
         const finalData = Array.from(mergedMap.values());
 
         // 4. Transform and Format
-        return finalData.map(car => {
+        const normalizedData = finalData.map(car => {
             car.brand = normalizeBrand(car.brand);
             const localVideo = getVehicleVideoUrlById(car.id);
             if (localVideo && !car.videoUrl) {
                 car.videoUrl = localVideo;
             }
 
-            // Detector Inteligente de Motos Reforçado
-            const bikeBrands = ['yamaha', 'triumph', 'harley-davidson', 'ducati', 'royal enfield', 'kawasaki', 'ktm', 'shineray', 'dafra', 'suzuki', 'bmw motorrad', 'zontes'];
-            const bikeKeywords = ['biz', 'cg ', 'f850', 'r1250', 'cb ', 'xre', 'bros', 'sahara', 'twister', ' intruder', 'pcx', 'nmax', 'scooter', 'hayabusa', 'versys', 'ninja', 'v-strom', 'tiger 900'];
+            // Detector Inteligente de Motos...
+            const bikeBrands = ['yamaha', 'triumph', 'harley-davidson', 'ducati', 'royal enfield', 'kawasaki', 'ktm', 'shineray', 'dafra', 'suzuki', 'bmw motorrad'];
+            const bikeModels = ['biz', 'cg', 'titan', 'fan', 'twister', 'bros', 'xre', 'cb 500', 'cb 300', 'pcx', 'elite', 'adv', 'pop', 'nc 750', 'crm'];
             const b = (car.brand || '').toLowerCase();
             const t = (car.title || '').toLowerCase();
 
-            const isBike = bikeBrands.some(brand => b.includes(brand)) || bikeKeywords.some(kw => t.includes(kw));
-
-            if (isBike) {
+            if (
+                bikeBrands.some(brand => b.includes(brand)) ||
+                bikeModels.some(model => t.includes(model)) ||
+                t.includes('f850') || t.includes('r1250')
+            ) {
                 car.type = 'motos';
             } else if (!car.type) {
                 car.type = 'carros';
             }
             return car;
-        }).sort((a, b) => {
-            const idA = Number(a.id) || 0;
-            const idB = Number(b.id) || 0;
-            return idB - idA;
-        });
+        }).sort((a, b) => b.id - a.id);
+
+        try {
+            sessionStorage.setItem(CARS_CACHE_KEY, JSON.stringify({
+                ts: Date.now(),
+                data: normalizedData
+            }));
+        } catch (e) { }
+
+        return normalizedData;
     },
 
     async getCarById(id) {
@@ -241,6 +372,7 @@ const DB = {
 
         localStorage.setItem('souza_cars', JSON.stringify(currentData.slice(0, 50))); // Limit local history
         setVehicleVideoUrlById(carObj.id, carObj.videoUrl || carObj.video || '');
+        try { sessionStorage.removeItem(CARS_CACHE_KEY); } catch (e) { }
         return true;
     },
 
@@ -255,6 +387,7 @@ const DB = {
         const filtered = current.filter(c => c.id != id);
         localStorage.setItem('souza_cars', JSON.stringify(filtered));
         setVehicleVideoUrlById(id, '');
+        try { sessionStorage.removeItem(CARS_CACHE_KEY); } catch (e) { }
         return true;
     }
 };
@@ -318,44 +451,37 @@ function recordVehicleView(vehicleId) {
 
 // Função para atualizar o estado global e a UI
 async function refreshAppData() {
-    try {
-        console.log('[RefreshData] Buscando dados frescos do DB...');
-        const freshData = await DB.getAllCars();
-        carsData = Array.isArray(freshData) ? freshData : [];
+    console.log('[RefreshData] Buscando dados frescos do DB...');
+    const freshData = await DB.getAllCars();
+    carsData = Array.isArray(freshData) ? freshData : [];
 
-        console.log(`[RefreshData] Estoque atualizado: ${carsData.length} veículos.`);
+    console.log(`[RefreshData] Estoque atualizado: ${carsData.length} veículos.`);
 
-        // 1. Atualiza Grid de Veículos (se existir)
-        const vGrid = document.getElementById('vehiclesGrid');
-        if (vGrid) {
-            if (window.populateBrands) {
-                window.populateBrands();
-                if (window.applyAllFilters) window.applyAllFilters();
-            } else {
-                renderCarGrid('vehiclesGrid', carsData);
-            }
+    // 1. Atualiza Grid de Veículos (se existir)
+    if (document.getElementById('vehiclesGrid')) {
+        // Se estiver na página de estoque, refresca os dropdowns e reaplica os filtros
+        if (window.populateBrands) {
+            window.populateBrands();
+            if (window.applyAllFilters) window.applyAllFilters();
+        } else {
+            renderCarGrid('vehiclesGrid', carsData);
         }
+    }
 
-        // 2. Atualiza Lista Administrativa
-        if (document.getElementById('adminCarList') && window.renderAdminList) window.renderAdminList();
-        if (document.getElementById('dashboardTopVehicles') && window.renderAdminDashboard) window.renderAdminDashboard();
+    // 2. Atualiza Lista Administrativa
+    if (document.getElementById('adminCarList') && window.renderAdminList) window.renderAdminList();
+    if (document.getElementById('dashboardTopVehicles') && window.renderAdminDashboard) window.renderAdminDashboard();
 
-        // 3. Atualiza Home Page (Grid e Filtros)
-        if (document.getElementById('carsGrid')) {
-            if (typeof initHomeGrid === 'function') initHomeGrid();
-        }
+    // 3. Atualiza Home Page (Grid e Filtros)
+    if (document.getElementById('carsGrid')) {
+        if (window.initHomeGrid) window.initHomeGrid();
+    }
 
-        // CRUCIAL: Notifica os filtros da Home que os dados chegaram
-        if (window.updateHomeFilters) {
-            window.updateHomeFilters();
-        } else if (typeof updateHomeFilters === 'function') {
-            updateHomeFilters();
-        }
-
+    // CRUCIAL: Notifica os filtros da Home que os dados chegaram
+    if (window.updateHomeFilters) {
+        window.updateHomeFilters();
+    } else {
         window.isDataReady = true;
-    } catch (err) {
-        console.error('[RefreshData] Erro crítico no carregamento:', err);
-        window.isDataReady = true; // Libera a UI mesmo com erro
     }
 }
 
@@ -370,9 +496,7 @@ function initHomeGrid() {
     if (!grid) return;
 
     function getFilteredCars() {
-        const type = getActiveType();
-        let filtered = (carsData || []).filter(c => (c.type || 'carros').toLowerCase() === type);
-
+        let filtered = [...(carsData || [])];
         if (window.currentHomeFilter === 'novos') {
             filtered = filtered.filter(c => {
                 if (c.condition) return c.condition === 'novos';
@@ -665,22 +789,16 @@ function capitalizeText(text) {
 
 function whatsappInterest(carTitle) {
     const text = `Olá! Tenho interesse no ${capitalizeText(carTitle)} que vi no site.`;
-    const phone = localStorage.getItem('souza_admin_phone') || "5519998383275";
+    const phone = localStorage.getItem('souza_admin_phone') || SITE_OFFICIAL_PHONE;
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
 }
 
 function resolveCardImagePair(car) {
-    if (!car) return { primary: 'logo.png', hover: 'logo.png' };
-
-    // Garante que images seja um array válido
-    const images = (Array.isArray(car.images) ? car.images : []).filter(img => img && typeof img === 'string' && img.length > 5);
-
-    // Fallback para propriedade .image (legado ou backup)
-    const backupImage = car.image && typeof car.image === 'string' && car.image.length > 5 ? car.image : 'logo.png';
-
-    const primary = images.length > 0 ? images[0] : backupImage;
-    const hover = images.length > 1 ? images[1] : primary;
-
+    const images = Array.isArray(car.images) && car.images.length > 0
+        ? car.images
+        : [car.image || 'logo.png'];
+    const primary = images[0] || car.image || 'logo.png';
+    const hover = images[1] || primary;
     return { primary, hover };
 }
 
@@ -773,11 +891,6 @@ function initFilters() {
     const searchCounter = document.getElementById('searchCounter');
 
     if (!brandSelect) return;
-
-    // Sincronização Inicial com URL (Garante que dropdowns acompanhem a Home)
-    const urlParams = new URLSearchParams(window.location.search);
-    if (typeSelect && urlParams.has('type')) typeSelect.value = urlParams.get('type').toLowerCase();
-    if (brandSelect && urlParams.has('brand')) brandSelect.value = urlParams.get('brand');
 
     let searchDebounce;
 
@@ -1067,15 +1180,9 @@ function syncStockFilterOptions() {
 
     if (!brandSelect) return;
 
-    const selectedType = (document.getElementById('stockFilterType')?.value || '').toLowerCase();
     const selectedBrand = brandSelect.value;
 
-    let pool = (carsData || []);
-    if (selectedType) {
-        pool = pool.filter(c => (c.type || 'carros').toLowerCase() === selectedType);
-    }
-
-    const brands = [...new Set(pool.map(c => c.brand).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    const brands = [...new Set((carsData || []).map(c => c.brand).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
     brandSelect.innerHTML = '<option value="">Todas</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
 
@@ -1172,7 +1279,7 @@ function buildSaleText(car) {
     const price = formatPrice(car.price || 0);
     const topOptions = Array.isArray(car.options) ? car.options.slice(0, 5) : [];
     const highlights = topOptions.length ? topOptions.join(', ') : 'Excelente estado geral e muito bem cuidado';
-    const phone = localStorage.getItem('souza_admin_phone') || '5519998383275';
+    const phone = localStorage.getItem('souza_admin_phone') || SITE_OFFICIAL_PHONE;
 
     return `${title}
 ${year} | ${km} | ${fuel} | ${trans}
@@ -2306,7 +2413,6 @@ function initAdmin() {
         const yearMaxInput = document.getElementById('stockYearMax');
         const priceMinInput = document.getElementById('stockPriceMin');
         const priceMaxInput = document.getElementById('stockPriceMax');
-        const typeFilter = document.getElementById('stockFilterType');
         const clearBtn = document.getElementById('clearStockFilters');
 
         if (searchInput) {
@@ -2323,6 +2429,7 @@ function initAdmin() {
             });
         }
 
+        const typeFilter = document.getElementById('stockFilterType');
         if (typeFilter) {
             typeFilter.addEventListener('change', () => {
                 window.adminStockFilterState.type = typeFilter.value;
@@ -2731,18 +2838,34 @@ function initAdmin() {
         const companyEmailInput = document.getElementById('adminCompanyEmailInput');
         const storeAddressInput = document.getElementById('adminStoreAddressInput');
 
-        const phone = (phoneInput?.value || '').replace(/\D/g, '');
-        const companyName = (companyNameInput?.value || '').trim();
-        const companyCnpj = (companyCnpjInput?.value || '').trim();
-        const companyEmail = (companyEmailInput?.value || '').trim();
-        const storeAddress = (storeAddressInput?.value || '').trim();
+        let rawPhone = (phoneInput?.value || '').replace(/\D/g, '');
 
-        if (phone.length < 10) {
-            alert('Numero invalido.');
+        // Remove +55 se usuário digitou (vamos adicionar depois)
+        if (rawPhone.startsWith('55')) {
+            rawPhone = rawPhone.substring(2);
+        }
+
+        // Remove 0 inicial se houver (formato antigo)
+        if (rawPhone.startsWith('0')) {
+            rawPhone = rawPhone.substring(1);
+        }
+
+        // Validação: deve ter pelo menos 10 dígitos (DDD + número)
+        if (rawPhone.length < 10) {
+            alert('Número inválido. Digite o DDD + número (mínimo 10 dígitos).\nExemplo: 19999313717');
             return;
         }
 
-        localStorage.setItem('souza_admin_phone', phone);
+        // Normaliza SEMPRE com +55
+        const normalizedPhone = `55${rawPhone}`;
+
+        const companyName = (companyNameInput?.value || '').trim();
+        const companyCnpj = (companyCnpjInput?.value || '').trim();
+        const companyEmail = (companyEmailInput?.value || '').trim();
+        const storeAddress = normalizeStoreAddressInput(storeAddressInput?.value || '');
+
+        // Salva o número normalizado (com 55 no início)
+        localStorage.setItem('souza_admin_phone', normalizedPhone);
         localStorage.setItem('souza_company_info', JSON.stringify({
             name: companyName,
             cnpj: companyCnpj,
@@ -2750,14 +2873,13 @@ function initAdmin() {
             address: storeAddress
         }));
 
-        if (storeAddress) {
-            localStorage.setItem('souza_store_address', storeAddress);
-        } else {
-            localStorage.removeItem('souza_store_address');
-        }
+        localStorage.setItem('souza_store_address', storeAddress);
 
         updateWhatsAppLinks();
-        showToast('Configurações salvas.');
+        updatePhoneDisplays();
+
+        // Mostra feedback visual do formato salvo
+        showToast(`Salvo! WhatsApp: ${formatPhoneDisplay(normalizedPhone)}`);
     };
 
     loadBrands();
@@ -2772,6 +2894,40 @@ function initAdmin() {
     const phoneInput = document.getElementById('adminPhoneInput');
     if (savedPhone && phoneInput) phoneInput.value = savedPhone;
 
+    // Adiciona formatação automática ao digitar no campo de telefone
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function (e) {
+            const digits = this.value.replace(/\D/g, '');
+
+            // Remove 55 duplicado se usuário está digitando
+            let cleanDigits = digits;
+            if (digits.startsWith('55') && digits.length > 2) {
+                cleanDigits = digits.substring(2);
+            }
+
+            // Mostra preview do formato final
+            if (cleanDigits.length >= 10) {
+                const preview = formatPhoneDisplay(`55${cleanDigits}`);
+                this.setAttribute('title', `✓ Será salvo como: ${preview}`);
+                this.style.borderColor = '#4CAF50'; // Verde = válido
+                this.style.boxShadow = '0 0 0 2px rgba(76, 175, 80, 0.1)';
+            } else if (cleanDigits.length > 0) {
+                this.setAttribute('title', `⚠ Digite pelo menos 10 dígitos (DDD + número)\nFaltam ${10 - cleanDigits.length} dígitos`);
+                this.style.borderColor = '#FF9500'; // Laranja = incompleto
+                this.style.boxShadow = '0 0 0 2px rgba(255, 149, 0, 0.1)';
+            } else {
+                this.removeAttribute('title');
+                this.style.borderColor = '';
+                this.style.boxShadow = '';
+            }
+        });
+
+        // Dispara validação inicial se já tiver valor
+        if (phoneInput.value) {
+            phoneInput.dispatchEvent(new Event('input'));
+        }
+    }
+
     const companyInfo = getStoredCompanyInfo();
     const companyNameInput = document.getElementById('adminCompanyNameInput');
     const companyCnpjInput = document.getElementById('adminCompanyCnpjInput');
@@ -2781,7 +2937,8 @@ function initAdmin() {
     if (companyCnpjInput) companyCnpjInput.value = companyInfo.cnpj || '';
     if (companyEmailInput) companyEmailInput.value = companyInfo.email || '';
     if (storeAddressInput) {
-        storeAddressInput.value = companyInfo.address || localStorage.getItem('souza_store_address') || '';
+        const savedAddress = companyInfo.address || localStorage.getItem('souza_store_address') || '';
+        storeAddressInput.value = normalizeStoreAddressInput(savedAddress);
     }
 
     if (form.addedDate) form.addedDate.value = new Date().toISOString().split('T')[0];
@@ -2853,17 +3010,12 @@ function renderFAQ() {
         });
     });
 }
-// Helper Global para determinar se a aba ativa é Carros ou Motos
-function getActiveType() {
-    const activeTab = document.querySelector('.tab-btn.active');
-    return activeTab ? activeTab.getAttribute('data-tab').toLowerCase() : 'carros';
-}
 
 function renderFeaturedCarousel() {
     if (!featuredCarouselTrack) return;
 
-    const type = typeof getActiveType === 'function' ? getActiveType() : 'carros';
-    const featured = (carsData || []).filter(c => (c.type || 'carros').toLowerCase() === type).slice(0, 6);
+    // Show only the first 5 or customized selection 
+    const featured = carsData.slice(0, 6);
 
     featuredCarouselTrack.innerHTML = featured.map(car => {
         // Pega até 5 opcionais se existirem
@@ -3277,13 +3429,7 @@ async function initDetails() {
     const mainTitleLower = mainTitle.toLowerCase();
     const derivedVersion = titleLower.startsWith(mainTitleLower) ? car.title.slice(mainTitle.length).trim() : (car.version || '');
     const subtitle = derivedVersion || [car.engine, car.transmission, car.fuel].filter(Boolean).join(' • ') || 'Especificação técnica';
-    const ownerPhone = localStorage.getItem('souza_admin_phone') || '5519998383275';
-
-    const brandLogoInlineEl = document.getElementById('detailsBrandLogoInline');
-    const brandLogo = resolveBrandLogo(car.brand);
-    if (brandLogoInlineEl) {
-        brandLogoInlineEl.src = brandLogo;
-    }
+    const ownerPhone = localStorage.getItem('souza_admin_phone') || SITE_OFFICIAL_PHONE;
 
     const heroWindow = document.getElementById('vehicleHeroWindow');
     const heroTrack = document.getElementById('detailsHeroTrack');
@@ -3291,7 +3437,7 @@ async function initDetails() {
     const nextMainBtn = document.getElementById('vehicleNextBtn');
     let heroStartIndex = 0;
 
-    const getVisibleSlides = () => 1;
+    const getVisibleSlides = () => window.matchMedia('(max-width: 640px)').matches ? 1 : 3;
 
     heroImages.slice(0, 6).forEach((src) => {
         const preloadImg = new Image();
@@ -3308,10 +3454,15 @@ async function initDetails() {
         `).join('');
 
         heroTrack.querySelectorAll('.vehicle-hero-photo').forEach((btn) => {
-            btn.addEventListener('click', () => {
+            const openAt = () => {
                 const idx = Number(btn.dataset.idx || '0') % rawImages.length;
                 window.openGallery(idx);
-            });
+            };
+            btn.addEventListener('click', openAt);
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                openAt();
+            }, { passive: false });
         });
     };
 
@@ -3393,8 +3544,10 @@ async function initDetails() {
     const engineEl = document.getElementById('detailsEngine');
     const transEl = document.getElementById('detailsTransmission');
     const colorEl = document.getElementById('detailsColor');
+    const brandLogoInlineEl = document.getElementById('detailsBrandLogoInline');
 
-    // Já declarado acima no escopo do initDetails
+    const brandLogo = resolveBrandLogo(car.brand);
+
     if (brandLogoInlineEl) {
         brandLogoInlineEl.src = brandLogo;
         brandLogoInlineEl.alt = `Logo ${car.brand || 'marca'}`;
@@ -3499,11 +3652,11 @@ async function initDetails() {
 
     const addressEl = document.getElementById('detailsAddress');
     const mapFrameEl = document.getElementById('detailsMapFrame');
-    let currentAddress = 'Rua 6, 3212, Santana, Rio Claro/SP';
+    let currentAddress = SITE_OFFICIAL_ADDRESS;
     if (addressEl) {
         const savedAddress = localStorage.getItem('souza_store_address');
         if (savedAddress && savedAddress.trim()) {
-            currentAddress = savedAddress.trim();
+            currentAddress = normalizeStoreAddressInput(savedAddress);
         }
         addressEl.innerText = currentAddress;
     }
@@ -3674,14 +3827,14 @@ function handleSwipeGesture() {
 // New: Evaluation Action (Suggestion 1)
 function whatsappEvaluation() {
     const message = `Olá! Gostaria de uma avaliação para o meu veículo usado como parte de pagamento ou para venda.`;
-    const phone = localStorage.getItem('souza_admin_phone') || "5519998383275";
+    const phone = localStorage.getItem('souza_admin_phone') || SITE_OFFICIAL_PHONE;
     window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
 }
 
 // Update Static WhatsApp Links
 function updateWhatsAppLinks() {
-    const phone = (localStorage.getItem('souza_admin_phone') || '5519998383275').replace(/\D/g, '');
-    const links = document.querySelectorAll('a[href*="wa.me"], a[href*="whatsapp.com"], a[href*="api.whatsapp.com"], a[href*="5519998383275"], a[href*="5519999999999"]');
+    const phone = (localStorage.getItem('souza_admin_phone') || SITE_OFFICIAL_PHONE).replace(/\D/g, '');
+    const links = document.querySelectorAll('a[href*="wa.me"], a[href*="whatsapp.com"], a[href*="api.whatsapp.com"], a[href*="5519999313717"], a[href*="5519999999999"]');
 
     links.forEach((link) => {
         const rawHref = link.getAttribute('href') || '';
@@ -3710,6 +3863,8 @@ function updateWhatsAppLinks() {
             link.setAttribute('href', replaced);
         }
     });
+
+    updatePhoneDisplays();
 }
 
 // ===== Main Init =====
@@ -3719,6 +3874,9 @@ function updateWhatsAppLinks() {
 // ===== Main Init =====
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        sanitizeMojibakeTextNodes();
+        enforceOfficialAddressInStorage();
+        enforceOfficialPhoneInStorage();
         console.log("Inicializando aplicação...");
         recordSiteAccess();
 
@@ -3779,6 +3937,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         }
+
+        sanitizeMojibakeTextNodes();
+        setTimeout(() => sanitizeMojibakeTextNodes(), 800);
 
     } catch (err) {
         console.error("CRITICAL ERROR IN APP INIT:", err);
@@ -3984,7 +4145,10 @@ function initHomeFilters() {
         updatePrices(typePool);
     };
 
-    // getActiveType movida para escopo global
+    function getActiveType() {
+        const activeTab = document.querySelector('.tab-btn.active');
+        return activeTab ? activeTab.getAttribute('data-tab').toLowerCase() : 'carros';
+    }
 
     function updateYears(filteredList) {
         if (!homeYearSelect) return;
@@ -4017,10 +4181,6 @@ function initHomeFilters() {
             tabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
             window.updateHomeFilters();
-
-            // Re-renderiza a grid e o carrosel da home para respeitar o novo tipo
-            if (typeof renderFeaturedCarousel === 'function') renderFeaturedCarousel();
-            if (typeof initHomeGrid === 'function') initHomeGrid();
 
             // Haptic/Click Feel
             if ('vibrate' in navigator) navigator.vibrate(5);
