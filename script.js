@@ -95,11 +95,8 @@ const DB = {
                 const { data, error } = await supabaseClient.from('veiculos').select('*').order('created_at', { ascending: false });
                 if (!error && data) {
                     onlineCars = data.map(c => ({ ...c, createdAt: c.created_at || c.createdAt }));
-                    // Clean local storage if online is healthy to prevent "zombie" cars
-                    if (onlineCars.length > 0) {
-                        const sanitizedLocal = onlineCars.map(c => ({ ...c, images: (c.images || []).slice(0, 1) })); // Keep only 1 thumb locally
-                        localStorage.setItem('souza_cars', JSON.stringify(sanitizedLocal));
-                    }
+                    // Cache results but don't overwrite local-only updates precisely here
+                    // to avoid losing data if sync just failed.
                 }
             } catch (e) { console.error("Supabase load fail:", e); }
         }
@@ -110,10 +107,10 @@ const DB = {
             localCars = Array.isArray(stored) ? stored : [];
         } catch (e) { }
 
-        // 3. Merge Logic (Priority to Online)
+        // 3. Merge Logic (Priority to Local Changes for immediate reflect)
         const mergedMap = new Map();
-        localCars.forEach(c => mergedMap.set(c.id, c));
         onlineCars.forEach(c => mergedMap.set(c.id, c));
+        localCars.forEach(c => mergedMap.set(c.id, c));
 
         const finalData = Array.from(mergedMap.values());
 
@@ -949,6 +946,7 @@ window.adminStepState = { current: 1, total: 3 };
 window.adminStockFilterState = {
     search: '',
     brand: '',
+    type: '',
     status: '',
     fuel: '',
     yearMin: 1990,
@@ -978,6 +976,7 @@ function getNormalizedStockFilters() {
     return {
         search: (state.search || '').toLowerCase().trim(),
         brand: (state.brand || '').trim(),
+        type: (state.type || '').trim(),
         status: (state.status || '').trim(),
         fuel: (state.fuel || '').trim(),
         yearMin: Math.min(yearMin, yearMax),
@@ -1007,6 +1006,7 @@ function applyAdminStockFilters(cars) {
         }
 
         if (f.brand && (car.brand || '') !== f.brand) return false;
+        if (f.type && (car.type || 'carros').toLowerCase() !== f.type.toLowerCase()) return false;
         if (f.status && (car.condition || '') !== f.status) return false;
         if (f.fuel && (car.fuel || 'Flex').toLowerCase() !== f.fuel.toLowerCase()) return false;
 
@@ -2151,7 +2151,7 @@ function initAdmin() {
                 try {
                     const session = JSON.parse(sessionData);
                     if (session && session.username) currentUser = session.username;
-                } catch (e) {}
+                } catch (e) { }
             }
 
             const domUser = document.getElementById('lblUsername');
@@ -2253,8 +2253,8 @@ function initAdmin() {
         const fuelFilter = document.getElementById('stockFilterFuel');
         const yearMinInput = document.getElementById('stockYearMin');
         const yearMaxInput = document.getElementById('stockYearMax');
-        const priceMinInput = document.getElementById('stockPriceMin');
         const priceMaxInput = document.getElementById('stockPriceMax');
+        const typeFilter = document.getElementById('stockFilterType');
         const clearBtn = document.getElementById('clearStockFilters');
 
         if (searchInput) {
@@ -2267,6 +2267,13 @@ function initAdmin() {
         if (brandFilter) {
             brandFilter.addEventListener('change', () => {
                 window.adminStockFilterState.brand = brandFilter.value;
+                window.renderAdminList();
+            });
+        }
+
+        if (typeFilter) {
+            typeFilter.addEventListener('change', () => {
+                window.adminStockFilterState.type = typeFilter.value;
                 window.renderAdminList();
             });
         }
@@ -2321,6 +2328,7 @@ function initAdmin() {
             clearBtn.addEventListener('click', () => {
                 window.adminStockFilterState.search = '';
                 window.adminStockFilterState.brand = '';
+                window.adminStockFilterState.type = '';
                 window.adminStockFilterState.status = '';
                 window.adminStockFilterState.fuel = '';
 
@@ -2330,6 +2338,7 @@ function initAdmin() {
 
                 if (searchInput) searchInput.value = '';
                 if (brandFilter) brandFilter.value = '';
+                if (typeFilter) typeFilter.value = '';
                 if (statusFilter) statusFilter.value = '';
                 if (fuelFilter) fuelFilter.value = '';
 
@@ -3213,13 +3222,19 @@ async function initDetails() {
     const subtitle = derivedVersion || [car.engine, car.transmission, car.fuel].filter(Boolean).join(' • ') || 'Especificação técnica';
     const ownerPhone = localStorage.getItem('souza_admin_phone') || '5519998383275';
 
+    const brandLogoInlineEl = document.getElementById('detailsBrandLogoInline');
+    const brandLogo = resolveBrandLogo(car.brand);
+    if (brandLogoInlineEl) {
+        brandLogoInlineEl.src = brandLogo;
+    }
+
     const heroWindow = document.getElementById('vehicleHeroWindow');
     const heroTrack = document.getElementById('detailsHeroTrack');
     const prevMainBtn = document.getElementById('vehiclePrevBtn');
     const nextMainBtn = document.getElementById('vehicleNextBtn');
     let heroStartIndex = 0;
 
-    const getVisibleSlides = () => 3;
+    const getVisibleSlides = () => 1;
 
     heroImages.slice(0, 6).forEach((src) => {
         const preloadImg = new Image();

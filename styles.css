@@ -4118,6 +4118,7 @@ button,
 }
 
 @media (max-width: 1080px) {
+
     .vehicle-summary-grid,
     .vehicle-contact-grid {
         grid-template-columns: 1fr;
@@ -4158,6 +4159,7 @@ button,
 }
 
 @media (max-width: 560px) {
+
     .vehicle-hero-section,
     .vehicle-summary-section,
     .vehicle-spec-section,
@@ -4259,7 +4261,7 @@ button,
     position: relative;
     overflow: hidden;
     width: 100%;
-    aspect-ratio: 16 / 5.5;
+    aspect-ratio: 16 / 9;
     outline: none;
 }
 
@@ -4271,8 +4273,8 @@ button,
 }
 
 .vehicle-hero-photo {
-    flex: 0 0 calc(100% / 3);
-    width: calc(100% / 3);
+    flex: 0 0 100%;
+    width: 100%;
     height: 100%;
     padding: 0;
     border: 0;
@@ -4519,8 +4521,8 @@ button,
 }
 
 .vehicle-page.vehicle-v2 .vehicle-hero-photo {
-    flex: 0 0 calc(100% / 3);
-    width: calc(100% / 3);
+    flex: 0 0 100%;
+    width: 100%;
 }
 
 .vehicle-page.vehicle-v2 .vehicle-carousel-btn {
@@ -4596,7 +4598,7 @@ button,
 }
 
 .vehicle-page.vehicle-v2 .vehicle-hero-photo img {
-    object-fit: contain;
+    object-fit: cover;
     background: #f6f6f6;
 }
 
@@ -4877,8 +4879,8 @@ button,
     }
 
     .vehicle-page.vehicle-v2 .vehicle-hero-photo {
-        flex: 0 0 calc(100% / 3);
-        width: calc(100% / 3);
+        flex: 0 0 100%;
+        width: 100%;
     }
 
     .vehicle-page.vehicle-v2 .vehicle-main-title {
