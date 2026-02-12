@@ -95,8 +95,14 @@ const DB = {
                 const { data, error } = await supabaseClient.from('veiculos').select('*').order('created_at', { ascending: false });
                 if (!error && data) {
                     onlineCars = data.map(c => ({ ...c, createdAt: c.created_at || c.createdAt }));
-                    // Cache results but don't overwrite local-only updates precisely here
-                    // to avoid losing data if sync just failed.
+                    // Sincroniza localmente versões leves para busca rápida offline
+                    if (onlineCars.length > 0) {
+                        const localCache = onlineCars.map(c => ({
+                            ...c,
+                            images: (c.images || []).slice(0, 1) // Apenas 1 foto local para poupar espaço
+                        }));
+                        localStorage.setItem('souza_cars', JSON.stringify(localCache));
+                    }
                 }
             } catch (e) { console.error("Supabase load fail:", e); }
         }
@@ -107,10 +113,10 @@ const DB = {
             localCars = Array.isArray(stored) ? stored : [];
         } catch (e) { }
 
-        // 3. Merge Logic (Priority to Local Changes for immediate reflect)
+        // 3. Merge Logic (Priority to Online for full details/images)
         const mergedMap = new Map();
-        onlineCars.forEach(c => mergedMap.set(c.id, c));
         localCars.forEach(c => mergedMap.set(c.id, c));
+        onlineCars.forEach(c => mergedMap.set(c.id, c));
 
         const finalData = Array.from(mergedMap.values());
 
