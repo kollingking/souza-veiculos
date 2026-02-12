@@ -915,9 +915,10 @@
 
         .upload-previews {
             display: flex;
-            flex-wrap: wrap;
             gap: 8px;
+            overflow-x: auto;
             margin-top: 10px;
+            padding-bottom: 6px;
         }
 
         .lifestyle-grid {
@@ -1571,7 +1572,7 @@
                         <h2 class="section-title" style="font-size:20px;">Contato Principal (WhatsApp)</h2>
                         <div class="form-group">
                             <label>Número com DDD</label>
-                            <input type="text" id="adminPhoneInput" placeholder="Ex: 5519998383275">
+                            <input type="text" id="adminPhoneInput" placeholder="Ex: 5519999313717">
                         </div>
                         <div class="form-grid" style="margin-top:12px;">
                             <div class="form-group">
@@ -1590,7 +1591,7 @@
                             <div class="form-group">
                                 <label>Endereço completo (Localização no site)</label>
                                 <input type="text" id="adminStoreAddressInput"
-                                    placeholder="Ex: Rua 6, 3212, Santana, Rio Claro/SP">
+                                    placeholder="Ex: Av. M15, n. 784 - Rio Claro/SP - CEP 13505-320">
                             </div>
                         </div>
                         <button type="button" onclick="window.saveAdminSettings()" class="btn-primary">Salvar</button>
@@ -1622,9 +1623,9 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://unpkg.com/heic2any@0.0.4/dist/heic2any.min.js"></script>
-    <script src="script.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="https://unpkg.com/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <script defer src="script.js"></script>
     <script>
         window.AdminTabs = {
             map: {
