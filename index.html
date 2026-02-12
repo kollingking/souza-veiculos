@@ -43,7 +43,7 @@
     <link rel="stylesheet" href="styles.css">
 
     <!-- Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Facebook Pixel Code -->
     <script>
@@ -90,7 +90,7 @@
                     <li><a href="#hero">Início</a></li>
                     <li><a href="veiculos.html">Veículos</a></li>
                     <li><a href="#sobre-nos">Sobre Nós</a></li>
-                    <li><a href="https://wa.me/5519998383275">Contato</a></li>
+                    <li><a href="https://wa.me/5519999313717">Contato</a></li>
                 </ul>
             </nav>
             <div class="header-actions">
@@ -131,7 +131,7 @@
                 <li><a href="#hero">Início</a></li>
                 <li><a href="veiculos.html">Veículos</a></li>
                 <li><a href="#sobre-nos">Sobre Nós</a></li>
-                <li><a href="https://wa.me/5519998383275">Contato</a></li>
+                <li><a href="https://wa.me/5519999313717">Contato</a></li>
             </ul>
         </nav>
 
@@ -141,17 +141,17 @@
     <section class="hero" id="hero">
         <div class="hero-banner">
             <div class="banner-slide active">
-                <img src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1920&q=80"
-                    alt="Carros de luxo">
+                <img src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1400&q=65"
+                    alt="Carros de luxo" loading="eager" fetchpriority="high" decoding="async">
                 <div class="banner-overlay"></div>
             </div>
             <div class="banner-slide">
-                <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1920&q=80"
-                    alt="Concessionária">
+                <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=60"
+                    alt="Concessionária" loading="lazy" decoding="async">
                 <div class="banner-overlay"></div>
             </div>
             <div class="banner-slide">
-                <img src="https://images.unsplash.com/photo-1555215695-3004980ad54e?w=1920&q=80" alt="Veículos premium">
+                <img src="https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=1400&q=60" alt="Veículos premium" loading="lazy" decoding="async">
                 <div class="banner-overlay"></div>
             </div>
         </div>
@@ -507,14 +507,14 @@
                     <div class="footer-links">
                         <h4>Contato</h4>
                         <p style="margin-bottom:10px; font-size: 0.9em; color: rgba(255, 255, 255, 0.75);">
-                            <strong>Endereço:</strong><br>
-                            Rua Doutor Eloi Chaves, 3214<br>
-                            Vila Operária - Rio Claro/SP<br>
-                            CEP: 13504-186
+                            <strong>Endere&ccedil;o:</strong><br>
+                            Av. M15, n&ordm; 784<br>
+                            Rio Claro/SP<br>
+                            CEP 13505-320
                         </p>
                         <p style="margin-bottom:10px; font-size: 0.9em; color: rgba(255, 255, 255, 0.75);">
                             <strong>Telefone / WhatsApp:</strong><br>
-                            (19) 99838-3275
+                            <span class="js-admin-phone-display">+55 19 99931-3717</span>
                         </p>
                     </div>
                 </div>
@@ -537,7 +537,7 @@
     <!-- WhatsApp Button -->
     <div class="whatsapp-float-container">
         <div class="whatsapp-label">Como posso te ajudar?</div>
-        <a href="https://api.whatsapp.com/send?phone=5519998383275&text=Olá! Gostaria de mais informações sobre os veículos."
+        <a href="https://api.whatsapp.com/send?phone=5519999313717&text=Olá! Gostaria de mais informações sobre os veículos."
             class="whatsapp-float" target="_blank">
             <span class="whatsapp-badge">1</span>
             <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor">
@@ -554,8 +554,7 @@
         </svg>
     </button>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="script.js"></script>
+    <script defer src="script.js"></script>
 </body>
 
 </html>

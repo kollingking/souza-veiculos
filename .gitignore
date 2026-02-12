@@ -1,10 +1,18 @@
 
+# Arquivos de Sistema
 .DS_Store
-*_broken.*
+Thumbs.db
 
-# Ignorar arquivos pesados
+# Arquivos de Erro/Log
+*_broken.*
+*.log
+
+# Arquivos Pesados (não commitar)
 *.zip
 *.rar
 fotos do site/Site - Veículos-20260206T225816Z-1-001.zip
 node_modules/
 .env
+
+# SEGURANÇA (NUNCA COMMITAR)
+CREDENCIAIS_ACESSO.txt

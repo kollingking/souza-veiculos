@@ -210,6 +210,8 @@ body.dark-mode .restricted-link {
 html {
     scroll-behavior: smooth;
     scroll-padding-top: var(--scroll-offset);
+    max-width: 100%;
+    overflow-x: hidden;
     /* Evita que o header cubra o conteúdo das âncoras */
 }
 
@@ -220,6 +222,7 @@ body {
     color: var(--text-primary);
     background-color: var(--bg-secondary);
     overflow-x: hidden;
+    max-width: 100%;
 }
 
 body.has-fixed-header {
@@ -4452,8 +4455,8 @@ button,
     }
 
     .vehicle-hero-photo {
-        flex-basis: 50%;
-        width: 50%;
+        flex-basis: 100%;
+        width: 100%;
     }
 
     .vehicle-carousel-btn {
@@ -4877,8 +4880,8 @@ button,
     }
 
     .vehicle-page.vehicle-v2 .vehicle-hero-photo {
-        flex: 0 0 calc(100% / 3);
-        width: calc(100% / 3);
+        flex: 0 0 100%;
+        width: 100%;
     }
 
     .vehicle-page.vehicle-v2 .vehicle-main-title {
