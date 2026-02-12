@@ -89,22 +89,26 @@ const DB = {
         let onlineCars = [];
         let localCars = [];
 
-        // 1. Load from Supabase (Priority Source of Truth)
+        // 1. Load from Supabase (Priority Source of Truth) with 5s Timeout Safety
         if (supabaseClient) {
             try {
-                const { data, error } = await supabaseClient.from('veiculos').select('*').order('created_at', { ascending: false });
+                const supabasePromise = supabaseClient.from('veiculos').select('*').order('created_at', { ascending: false });
+                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Supabase Timeout')), 5000));
+
+                const { data, error } = await Promise.race([supabasePromise, timeoutPromise]);
+
                 if (!error && data) {
                     onlineCars = data.map(c => ({ ...c, createdAt: c.created_at || c.createdAt }));
                     // Sincroniza localmente versões leves para busca rápida offline
                     if (onlineCars.length > 0) {
                         const localCache = onlineCars.map(c => ({
                             ...c,
-                            images: (c.images || []).slice(0, 1) // Apenas 1 foto local para poupar espaço
+                            images: (c.images || []).slice(0, 1)
                         }));
                         localStorage.setItem('souza_cars', JSON.stringify(localCache));
                     }
                 }
-            } catch (e) { console.error("Supabase load fail:", e); }
+            } catch (e) { console.warn("Supabase load skipped (offline or timeout):", e.message); }
         }
 
         // 2. Load from LocalStorage
@@ -145,7 +149,11 @@ const DB = {
                 car.type = 'carros';
             }
             return car;
-        }).sort((a, b) => b.id - a.id);
+        }).sort((a, b) => {
+            const idA = Number(a.id) || 0;
+            const idB = Number(b.id) || 0;
+            return idB - idA;
+        });
     },
 
     async getCarById(id) {
@@ -306,37 +314,44 @@ function recordVehicleView(vehicleId) {
 
 // Função para atualizar o estado global e a UI
 async function refreshAppData() {
-    console.log('[RefreshData] Buscando dados frescos do DB...');
-    const freshData = await DB.getAllCars();
-    carsData = Array.isArray(freshData) ? freshData : [];
+    try {
+        console.log('[RefreshData] Buscando dados frescos do DB...');
+        const freshData = await DB.getAllCars();
+        carsData = Array.isArray(freshData) ? freshData : [];
 
-    console.log(`[RefreshData] Estoque atualizado: ${carsData.length} veículos.`);
+        console.log(`[RefreshData] Estoque atualizado: ${carsData.length} veículos.`);
 
-    // 1. Atualiza Grid de Veículos (se existir)
-    if (document.getElementById('vehiclesGrid')) {
-        // Se estiver na página de estoque, refresca os dropdowns e reaplica os filtros
-        if (window.populateBrands) {
-            window.populateBrands();
-            if (window.applyAllFilters) window.applyAllFilters();
-        } else {
-            renderCarGrid('vehiclesGrid', carsData);
+        // 1. Atualiza Grid de Veículos (se existir)
+        const vGrid = document.getElementById('vehiclesGrid');
+        if (vGrid) {
+            if (window.populateBrands) {
+                window.populateBrands();
+                if (window.applyAllFilters) window.applyAllFilters();
+            } else {
+                renderCarGrid('vehiclesGrid', carsData);
+            }
         }
-    }
 
-    // 2. Atualiza Lista Administrativa
-    if (document.getElementById('adminCarList') && window.renderAdminList) window.renderAdminList();
-    if (document.getElementById('dashboardTopVehicles') && window.renderAdminDashboard) window.renderAdminDashboard();
+        // 2. Atualiza Lista Administrativa
+        if (document.getElementById('adminCarList') && window.renderAdminList) window.renderAdminList();
+        if (document.getElementById('dashboardTopVehicles') && window.renderAdminDashboard) window.renderAdminDashboard();
 
-    // 3. Atualiza Home Page (Grid e Filtros)
-    if (document.getElementById('carsGrid')) {
-        if (window.initHomeGrid) window.initHomeGrid();
-    }
+        // 3. Atualiza Home Page (Grid e Filtros)
+        if (document.getElementById('carsGrid')) {
+            if (typeof initHomeGrid === 'function') initHomeGrid();
+        }
 
-    // CRUCIAL: Notifica os filtros da Home que os dados chegaram
-    if (window.updateHomeFilters) {
-        window.updateHomeFilters();
-    } else {
+        // CRUCIAL: Notifica os filtros da Home que os dados chegaram
+        if (window.updateHomeFilters) {
+            window.updateHomeFilters();
+        } else if (typeof updateHomeFilters === 'function') {
+            updateHomeFilters();
+        }
+
         window.isDataReady = true;
+    } catch (err) {
+        console.error('[RefreshData] Erro crítico no carregamento:', err);
+        window.isDataReady = true; // Libera a UI mesmo com erro
     }
 }
 
@@ -3356,10 +3371,8 @@ async function initDetails() {
     const engineEl = document.getElementById('detailsEngine');
     const transEl = document.getElementById('detailsTransmission');
     const colorEl = document.getElementById('detailsColor');
-    const brandLogoInlineEl = document.getElementById('detailsBrandLogoInline');
 
-    const brandLogo = resolveBrandLogo(car.brand);
-
+    // Já declarado acima no escopo do initDetails
     if (brandLogoInlineEl) {
         brandLogoInlineEl.src = brandLogo;
         brandLogoInlineEl.alt = `Logo ${car.brand || 'marca'}`;
