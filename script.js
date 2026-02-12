@@ -139,11 +139,15 @@ const DB = {
                 car.videoUrl = localVideo;
             }
 
-            // Detector Inteligente de Motos...
-            const bikeBrands = ['yamaha', 'triumph', 'harley-davidson', 'ducati', 'royal enfield', 'kawasaki', 'ktm', 'shineray', 'dafra', 'suzuki', 'bmw motorrad'];
+            // Detector Inteligente de Motos Reforçado
+            const bikeBrands = ['yamaha', 'triumph', 'harley-davidson', 'ducati', 'royal enfield', 'kawasaki', 'ktm', 'shineray', 'dafra', 'suzuki', 'bmw motorrad', 'zontes'];
+            const bikeKeywords = ['biz', 'cg ', 'f850', 'r1250', 'cb ', 'xre', 'bros', 'sahara', 'twister', ' intruder', 'pcx', 'nmax', 'scooter', 'hayabusa', 'versys', 'ninja', 'v-strom', 'tiger 900'];
             const b = (car.brand || '').toLowerCase();
             const t = (car.title || '').toLowerCase();
-            if (bikeBrands.some(brand => b.includes(brand)) || t.includes('biz') || t.includes('cg ') || t.includes('f850') || t.includes('r1250')) {
+
+            const isBike = bikeBrands.some(brand => b.includes(brand)) || bikeKeywords.some(kw => t.includes(kw));
+
+            if (isBike) {
                 car.type = 'motos';
             } else if (!car.type) {
                 car.type = 'carros';
@@ -366,7 +370,9 @@ function initHomeGrid() {
     if (!grid) return;
 
     function getFilteredCars() {
-        let filtered = [...(carsData || [])];
+        const type = getActiveType();
+        let filtered = (carsData || []).filter(c => (c.type || 'carros').toLowerCase() === type);
+
         if (window.currentHomeFilter === 'novos') {
             filtered = filtered.filter(c => {
                 if (c.condition) return c.condition === 'novos';
@@ -768,6 +774,11 @@ function initFilters() {
 
     if (!brandSelect) return;
 
+    // Sincronização Inicial com URL (Garante que dropdowns acompanhem a Home)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (typeSelect && urlParams.has('type')) typeSelect.value = urlParams.get('type').toLowerCase();
+    if (brandSelect && urlParams.has('brand')) brandSelect.value = urlParams.get('brand');
+
     let searchDebounce;
 
     // Helper: Update URL (Para manter a barra de endereço limpa e funcional)
@@ -1056,9 +1067,15 @@ function syncStockFilterOptions() {
 
     if (!brandSelect) return;
 
+    const selectedType = (document.getElementById('stockFilterType')?.value || '').toLowerCase();
     const selectedBrand = brandSelect.value;
 
-    const brands = [...new Set((carsData || []).map(c => c.brand).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    let pool = (carsData || []);
+    if (selectedType) {
+        pool = pool.filter(c => (c.type || 'carros').toLowerCase() === selectedType);
+    }
+
+    const brands = [...new Set(pool.map(c => c.brand).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
     brandSelect.innerHTML = '<option value="">Todas</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
 
@@ -2836,12 +2853,17 @@ function renderFAQ() {
         });
     });
 }
+// Helper Global para determinar se a aba ativa é Carros ou Motos
+function getActiveType() {
+    const activeTab = document.querySelector('.tab-btn.active');
+    return activeTab ? activeTab.getAttribute('data-tab').toLowerCase() : 'carros';
+}
 
 function renderFeaturedCarousel() {
     if (!featuredCarouselTrack) return;
 
-    // Show only the first 5 or customized selection 
-    const featured = carsData.slice(0, 6);
+    const type = typeof getActiveType === 'function' ? getActiveType() : 'carros';
+    const featured = (carsData || []).filter(c => (c.type || 'carros').toLowerCase() === type).slice(0, 6);
 
     featuredCarouselTrack.innerHTML = featured.map(car => {
         // Pega até 5 opcionais se existirem
@@ -3962,10 +3984,7 @@ function initHomeFilters() {
         updatePrices(typePool);
     };
 
-    function getActiveType() {
-        const activeTab = document.querySelector('.tab-btn.active');
-        return activeTab ? activeTab.getAttribute('data-tab').toLowerCase() : 'carros';
-    }
+    // getActiveType movida para escopo global
 
     function updateYears(filteredList) {
         if (!homeYearSelect) return;
@@ -3998,6 +4017,10 @@ function initHomeFilters() {
             tabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
             window.updateHomeFilters();
+
+            // Re-renderiza a grid e o carrosel da home para respeitar o novo tipo
+            if (typeof renderFeaturedCarousel === 'function') renderFeaturedCarousel();
+            if (typeof initHomeGrid === 'function') initHomeGrid();
 
             // Haptic/Click Feel
             if ('vibrate' in navigator) navigator.vibrate(5);
