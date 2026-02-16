@@ -3,26 +3,70 @@ const defaultCars = [];
 const SITE_OFFICIAL_ADDRESS = 'Av. M15, n. 784 - Rio Claro/SP - CEP 13505-320';
 const SITE_OFFICIAL_PHONE = '5519999313717';
 
+/**
+ * 🇧🇷 Normalizador Universal de Telefone Brasileiro
+ * Aceita múltiplos formatos de entrada e converte para padrão WhatsApp
+ * 
+ * Formatos aceitos:
+ * - 19978259364 (11 dígitos: DDD + número)
+ * - 019978259364 (12 dígitos: zero + DDD + número)
+ * - 5519978259364 (13 dígitos: código país + DDD + número)
+ * - +55 19 97825-9364 (formatado com espaços e hífen)
+ * - (19) 97825-9364 (formato visual com parênteses)
+ * 
+ * Saída: sempre 13 dígitos sem formatação (ex: 5519978259364)
+ */
 function normalizePhoneForWhatsApp(rawInput, fallback = SITE_OFFICIAL_PHONE) {
+    // Remove TODOS os caracteres não numéricos (espaços, hífen, parênteses, +)
     const digits = (rawInput || '').toString().replace(/\D/g, '');
 
     // Se vazio, retorna fallback
     if (!digits) return fallback;
 
-    // Se já começa com 55, retorna como está
-    if (digits.startsWith('55')) {
-        // Garante que tem pelo menos 12 dígitos (55 + DDD + número de 8 ou 9)
-        if (digits.length >= 12) return digits;
+    // Caso 1: Já tem 13 dígitos e começa com 55 (padrão completo)
+    // Ex: 5519978259364
+    if (digits.length === 13 && digits.startsWith('55')) {
+        return digits;
     }
 
-    // Se começa com 0, remove o zero inicial (formato antigo)
-    if (digits.startsWith('0')) {
-        const cleaned = digits.substring(1);
-        return `55${cleaned}`;
+    // Caso 2: Tem 12 dígitos e começa com 0 (formato antigo com zero)
+    // Ex: 019978259364 → remove o 0 e adiciona 55
+    if (digits.length === 12 && digits.startsWith('0')) {
+        const cleaned = digits.substring(1); // Remove o 0
+        return `55${cleaned}`; // Retorna: 5519978259364
     }
 
-    // Para qualquer outro caso, adiciona 55 no início
-    return `55${digits}`;
+    // Caso 3: Tem 11 dígitos (apenas DDD + número, SEM código do país)
+    // Ex: 19978259364 → adiciona o 55
+    if (digits.length === 11) {
+        return `55${digits}`; // Retorna: 5519978259364
+    }
+
+    // Caso 4: Tem 10 dígitos (números antigos sem o 9 extra)
+    // Ex: 1998383275 → adiciona 55
+    if (digits.length === 10) {
+        return `55${digits}`; // Retorna: 551998383275
+    }
+
+    // Caso 5: Mais de 13 dígitos (remover caracteres extras do início)
+    // Ex: +5519978259364 (14 dígitos por conta do +) → já foi limpo, pega os últimos 13
+    if (digits.length > 13) {
+        // Se começa com 55, pega os primeiros 13
+        if (digits.startsWith('55')) {
+            return digits.substring(0, 13);
+        }
+        // Senão, pega os últimos 11 e adiciona 55
+        const last11 = digits.slice(-11);
+        return `55${last11}`;
+    }
+
+    // Fallback: Se não se encaixar em nenhum caso, tenta adicionar 55
+    // e retorna ou o fallback se inválido
+    if (digits.length >= 10) {
+        return `55${digits}`;
+    }
+
+    return fallback;
 }
 
 function normalizeStoreAddressInput(value) {
@@ -62,15 +106,44 @@ function enforceOfficialPhoneInStorage() {
     }
 }
 
+/**
+ * 📱 Formatador de Telefone para Exibição Visual
+ * Converte número normalizado para formato brasileiro legível
+ * Entrada: 5519978259364 (13 dígitos) ou 19978259364 (11 dígitos)
+ * Saída: (19) 97825-9364
+ */
 function formatPhoneDisplay(phoneDigits) {
     const digits = (phoneDigits || '').replace(/\D/g, '');
     if (!digits) return '';
+
+    // Caso 1: 13 dígitos começando com 55 (formato completo do WhatsApp)
+    // Ex: 5519978259364 → (19) 97825-9364
     if (digits.length === 13 && digits.startsWith('55')) {
-        return `+55 ${digits.slice(2, 4)} ${digits.slice(4, 9)}-${digits.slice(9)}`;
+        const ddd = digits.slice(2, 4);      // Pega o DDD (19)
+        const part1 = digits.slice(4, 9);     // Primeiros 5 dígitos (97825)
+        const part2 = digits.slice(9);        // Últimos 4 dígitos (9364)
+        return `(${ddd}) ${part1}-${part2}`;
     }
+
+    // Caso 2: 11 dígitos (DDD + número sem código do país)
+    // Ex: 19978259364 → (19) 97825-9364
     if (digits.length === 11) {
-        return `+55 ${digits.slice(0, 2)} ${digits.slice(2, 7)}-${digits.slice(7)}`;
+        const ddd = digits.slice(0, 2);       // Pega o DDD (19)
+        const part1 = digits.slice(2, 7);     // Primeiros 5 dígitos (97825)
+        const part2 = digits.slice(7);        // Últimos 4 dígitos (9364)
+        return `(${ddd}) ${part1}-${part2}`;
     }
+
+    // Caso 3: 10 dígitos (números antigos sem o 9)
+    // Ex: 1998383275 → (19) 9838-3275
+    if (digits.length === 10) {
+        const ddd = digits.slice(0, 2);
+        const part1 = digits.slice(2, 6);
+        const part2 = digits.slice(6);
+        return `(${ddd}) ${part1}-${part2}`;
+    }
+
+    // Fallback: retorna o que vier
     return digits;
 }
 

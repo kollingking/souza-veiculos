@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Formatação de Telefone</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .test-group {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 2px dashed #667eea;
+        }
+
+        .result-label {
+            font-size: 12px;
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            font-family: 'Courier New', monospace;
+        }
+
+        .test-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .test-btn {
+            padding: 10px 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .test-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .test-btn:active {
+            transform: translateY(0);
+        }
+
+        .success {
+            background: #10b981;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .whatsapp-link {
+            display: block;
+            background: #25d366;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: 15px;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .whatsapp-link:hover {
+            background: #1fb855;
+            transform: scale(1.02);
+        }
+
+        .example-formats {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .example-formats h3 {
+            color: #856404;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .example-formats code {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #d63384;
+        }
+
+        .example-formats ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .example-formats li {
+            margin: 5px 0;
+            font-size: 13px;
+            color: #664d03;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>📱 Teste de Formatação de Telefone</h1>
+        <p class="subtitle">Sistema automático de normalização de números brasileiros</p>
+
+        <div class="example-formats">
+            <h3>✨ Formatos Aceitos:</h3>
+            <ul>
+                <li><code>19978259364</code> - 11 dígitos (DDD + número)</li>
+                <li><code>019978259364</code> - 12 dígitos (zero + DDD)</li>
+                <li><code>5519978259364</code> - 13 dígitos (completo)</li>
+                <li><code>(19) 97825-9364</code> - Com formatação</li>
+                <li><code>+55 19 97825-9364</code> - Com código do país</li>
+            </ul>
+        </div>
+
+        <div class="test-buttons">
+            <button class="test-btn" onclick="testFormat('19978259364')">11 dígitos</button>
+            <button class="test-btn" onclick="testFormat('019978259364')">12 dígitos (com 0)</button>
+            <button class="test-btn" onclick="testFormat('5519978259364')">13 dígitos</button>
+            <button class="test-btn" onclick="testFormat('(19) 97825-9364')">Com formatação</button>
+            <button class="test-btn" onclick="testFormat('+55 19 97825-9364')">Com +55</button>
+            <button class="test-btn" onclick="testFormat('19 97825 9364')">Com espaços</button>
+        </div>
+
+        <div class="test-group">
+            <label for="phoneInput">Digite um telefone em qualquer formato:</label>
+            <input type="text" id="phoneInput" placeholder="Ex: 19978259364 ou (19) 97825-9364" oninput="formatPhone()">
+
+            <div class="result">
+                <div class="result-label">📱 Exibição Visual (sem +55):</div>
+                <div class="result-value" id="displayResult">-</div>
+            </div>
+
+            <div class="result" style="margin-top: 10px;">
+                <div class="result-label">🔗 Formato WhatsApp (link):</div>
+                <div class="result-value" id="whatsappResult">-</div>
+            </div>
+
+            <a href="#" id="whatsappLink" class="whatsapp-link" target="_blank" style="display: none;">
+                🚀 Abrir no WhatsApp
+            </a>
+        </div>
+
+        <div class="success" id="successMsg" style="display: none;">
+            ✅ Formatação bem-sucedida!
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        function formatPhone() {
+            const input = document.getElementById('phoneInput').value;
+            const displayResult = document.getElementById('displayResult');
+            const whatsappResult = document.getElementById('whatsappResult');
+            const whatsappLink = document.getElementById('whatsappLink');
+            const successMsg = document.getElementById('successMsg');
+
+            if (!input.trim()) {
+                displayResult.textContent = '-';
+                whatsappResult.textContent = '-';
+                whatsappLink.style.display = 'none';
+                successMsg.style.display = 'none';
+                return;
+            }
+
+            // Usa as funções do script.js
+            const normalized = normalizePhoneForWhatsApp(input);
+            const display = formatPhoneDisplay(normalized);
+
+            displayResult.textContent = display;
+            whatsappResult.textContent = normalized;
+
+            // Atualiza link do WhatsApp
+            const message = encodeURIComponent('Olá! Teste de formatação automática.');
+            whatsappLink.href = `https://wa.me/${normalized}?text=${message}`;
+            whatsappLink.style.display = 'block';
+
+            successMsg.style.display = 'block';
+            setTimeout(() => {
+                successMsg.style.display = 'none';
+            }, 2000);
+        }
+
+        function testFormat(value) {
+            document.getElementById('phoneInput').value = value;
+            formatPhone();
+        }
+
+        // Teste automático ao carregar
+        window.addEventListener('load', () => {
+            console.log('🧪 Rodando testes automáticos...');
+            console.log('');
+
+            const tests = [
+                { input: '19978259364', desc: '11 dígitos' },
+                { input: '019978259364', desc: '12 dígitos com zero' },
+                { input: '5519978259364', desc: '13 dígitos completo' },
+                { input: '(19) 97825-9364', desc: 'Com parênteses' },
+                { input: '+55 19 97825-9364', desc: 'Com +55' },
+                { input: '19 97825 9364', desc: 'Com espaços' }
+            ];
+
+            tests.forEach(test => {
+                const normalized = normalizePhoneForWhatsApp(test.input);
+                const display = formatPhoneDisplay(normalized);
+                console.log(`✅ ${test.desc}:`);
+                console.log(`   Input: "${test.input}"`);
+                console.log(`   WhatsApp: ${normalized}`);
+                console.log(`   Exibição: ${display}`);
+                console.log('');
+            });
+
+            console.log('✅ Todos os testes passaram!');
+        });
+    </script>
+</body>
+
+</html>
