@@ -16,7 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
 
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260216-3">
 
     <style>
         body {
@@ -1083,7 +1083,136 @@
             }
 
             .header-actions {
-                justify-content: flex-start;
+                justify-content: flex-end;
+            }
+        }
+
+        /* Admin header: on mobile keep actions on the RIGHT (avoid overlapping the logo) */
+        @media (max-width: 768px) {
+            body.has-fixed-header>header.header {
+                padding: 0 12px;
+                flex-wrap: nowrap;
+                display: flex !important;
+                justify-content: space-between !important;
+            }
+
+            body.has-fixed-header>header.header .header-brand {
+                min-width: 0;
+                flex: 0 0 auto !important;
+            }
+
+            body.has-fixed-header>header.header .header-logo-img {
+                height: 34px;
+                display: block;
+            }
+
+            body.has-fixed-header>header.header .header-actions {
+                display: flex !important;
+                position: static !important;
+                transform: none !important;
+                right: auto !important;
+                top: auto !important;
+                left: auto !important;
+                margin-left: auto !important;
+                justify-content: flex-end !important;
+                flex-wrap: nowrap;
+                align-items: center;
+                gap: 8px;
+                max-width: calc(100% - 80px); /* evita cortar "Sair" em telas pequenas */
+            }
+
+            body.has-fixed-header>header.header .theme-toggle {
+                margin-left: 0;
+            }
+
+            body.has-fixed-header>header.header .header-link-btn,
+            body.has-fixed-header>header.header .header-logout-btn {
+                padding: 8px 12px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 420px) {
+            body.has-fixed-header>header.header {
+                padding: 0 10px;
+            }
+
+            body.has-fixed-header>header.header .header-actions {
+                gap: 6px;
+                max-width: calc(100% - 70px);
+            }
+
+            body.has-fixed-header>header.header .theme-toggle {
+                width: 34px;
+                height: 34px;
+            }
+
+            body.has-fixed-header>header.header .header-link-btn,
+            body.has-fixed-header>header.header .header-logout-btn {
+                height: 34px;
+                padding: 0 10px;
+                font-size: 12px;
+            }
+        }
+
+        /* Dashboard charts (admin-only) */
+        .dashboard-charts {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .chart-card {
+            padding: 18px;
+        }
+
+        .chart-span-2 {
+            grid-column: 1 / -1;
+        }
+
+        .chart-wrap {
+            position: relative;
+            height: 260px;
+            margin-top: 12px;
+        }
+
+        .chart-wrap canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .chart-caption {
+            margin-top: 10px;
+            font-size: 0.88rem;
+            line-height: 1.35;
+            color: var(--text-primary);
+            opacity: 0.78;
+        }
+
+        .chart-caption strong {
+            color: var(--text-primary);
+            opacity: 1;
+            font-weight: 600;
+        }
+
+        .chart-caption-values {
+            margin-top: 6px;
+            font-weight: 600;
+            opacity: 0.92;
+        }
+
+        .chart-caption-values:empty {
+            display: none;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-charts {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-wrap {
+                height: 240px;
             }
         }
     </style>
@@ -1093,7 +1222,7 @@
 
     <header class="header" id="header">
         <div class="header-brand">
-            <img src="logo.png" alt="Souza Veículos" class="header-logo-img">
+            <img src="logo.png" alt="Souza Select Car" class="header-logo-img">
             <span class="header-logo-text">Painel Administrativo</span>
         </div>
         <div class="header-actions">
@@ -1142,7 +1271,7 @@
                         <path d="M17 17a2 2 0 1 0 0.1 0"></path>
                     </svg>
                 </span>
-                Novo Veículo
+                Novo Ve&iacute;culo
             </button>
 
             <button class="sidebar-menu-btn" id="btnTabEstoque" onclick="AdminTabs.open('estoque')">
@@ -1168,7 +1297,7 @@
                         <circle cx="12" cy="12" r="4"></circle>
                     </svg>
                 </span>
-                Integrações
+                Integra&ccedil;&otilde;es
             </button>
 
             <button class="sidebar-menu-btn" id="btnTabConfig" onclick="AdminTabs.open('config')" style="display:none;">
@@ -1180,7 +1309,7 @@
                         </path>
                     </svg>
                 </span>
-                Configurações
+                Configura&ccedil;&otilde;es
             </button>
 
             <div class="sidebar-user-card">
@@ -1197,27 +1326,53 @@
 
                 <div class="dashboard-grid">
                     <article class="dashboard-stat">
-                        <div class="dashboard-stat-label">Acessos totais</div>
-                        <div class="dashboard-stat-value" id="dashTotalAccess">0</div>
-                    </article>
-                    <article class="dashboard-stat">
-                        <div class="dashboard-stat-label">Acessos hoje</div>
-                        <div class="dashboard-stat-value" id="dashTodayAccess">0</div>
-                    </article>
-                    <article class="dashboard-stat">
-                        <div class="dashboard-stat-label">Veículos no estoque</div>
+                        <div class="dashboard-stat-label">Ve&iacute;culos no estoque</div>
                         <div class="dashboard-stat-value" id="dashStockCount">0</div>
                     </article>
                     <article class="dashboard-stat">
-                        <div class="dashboard-stat-label">Veículo mais acessado</div>
-                        <div class="dashboard-stat-value" id="dashTopVehicle">-</div>
+                        <div class="dashboard-stat-label">Marcas no estoque</div>
+                        <div class="dashboard-stat-value" id="dashBrandCount">0</div>
+                    </article>
+                    <article class="dashboard-stat">
+                        <div class="dashboard-stat-label">Pre&ccedil;o m&eacute;dio</div>
+                        <div class="dashboard-stat-value" id="dashAvgPrice">R$ 0</div>
+                    </article>
+                    <article class="dashboard-stat">
+                        <div class="dashboard-stat-label">Faixa de pre&ccedil;o</div>
+                        <div class="dashboard-stat-value" id="dashPriceSpan">R$ 0 - R$ 0</div>
+                    </article>
+                </div>
+
+                <div class="dashboard-charts">
+                    <article class="admin-card chart-card chart-span-2">
+                        <h2 class="section-title">Estoque por faixa de pre&ccedil;o</h2>
+                        <div class="chart-wrap">
+                            <canvas id="chartPriceRanges" aria-label="Gr&aacute;fico de estoque por faixa de pre&ccedil;o" role="img"></canvas>
+                        </div>
+                        <div class="chart-caption">
+                            <strong>Legenda:</strong> cada barra mostra quantos ve&iacute;culos existem em cada faixa
+                            (at&eacute; 70 mil, 70&ndash;120 mil, acima de 120 mil).
+                            <div class="chart-caption-values" id="captionPriceRangeValues"></div>
+                        </div>
+                    </article>
+
+                    <article class="admin-card chart-card chart-span-2">
+                        <h2 class="section-title">Top marcas (estoque)</h2>
+                        <div class="chart-wrap">
+                            <canvas id="chartTopBrands" aria-label="Gr&aacute;fico de marcas com mais ve&iacute;culos" role="img"></canvas>
+                        </div>
+                        <div class="chart-caption">
+                            <strong>Legenda:</strong> cada barra representa uma marca; o valor &eacute; a
+                            <strong>quantidade</strong> de ve&iacute;culos cadastrados daquela marca.
+                            <div class="chart-caption-values" id="captionTopBrandsValues"></div>
+                        </div>
                     </article>
                 </div>
 
                 <div class="admin-card">
-                    <h2 class="section-title">Veículos mais acessados</h2>
+                    <h2 class="section-title">Marcas com mais ve&iacute;culos</h2>
                     <div id="dashboardTopVehicles" class="dashboard-list">
-                        <div class="help-text">Coletando dados de acesso...</div>
+                        <div class="help-text">Carregando dados do estoque...</div>
                     </div>
                 </div>
 
@@ -1230,18 +1385,18 @@
             </section>
 
             <section id="tab-cadastro" class="admin-tab" style="display:none;">
-                <h1 class="admin-page-title">Novo Veículo</h1>
+                Novo Ve&iacute;culo
 
                 <div class="stepper" id="carFormStepper">
                     <span class="step-dot active" data-step-dot="1">1</span><span class="step-label">Dados do
-                        Veículo</span>
+                        Ve&iacute;culo</span>
                     <span class="step-dot" data-step-dot="2">2</span><span class="step-label">Detalhes da Venda</span>
                     <span class="step-dot" data-step-dot="3">3</span><span class="step-label">Opcionais e Fotos</span>
                 </div>
 
                 <div class="admin-actions" style="margin-bottom:12px;">
                     <button type="button" id="duplicateCurrentVehicleBtn" class="btn-secondary"
-                        style="display:none;">Duplicar este veículo</button>
+                        style="display:none;">Duplicar este ve&iacute;culo</button>
                 </div>
 
                 <form id="addCarForm" novalidate>
@@ -1249,10 +1404,10 @@
 
                     <div class="admin-step active" data-step="1">
                         <div class="admin-card">
-                            <h2 class="section-title">Dados do Veículo</h2>
+                            <h2 class="section-title">Dados do Ve&iacute;culo</h2>
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label>Tipo de Veículo *</label>
+                                    <label>Tipo de Ve&iacute;culo *</label>
                                     <select id="vehicleTypeSelect" onchange="window.toggleVehicleType()">
                                         <option value="carros">Carros</option>
                                         <option value="motos">Motos</option>
@@ -1339,19 +1494,21 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label>Data da adição</label>
+                                    <label>Data da adi&ccedil;&atilde;o</label>
                                     <input type="date" name="addedDate" id="addedDateInput">
                                 </div>
                                 <div class="form-group">
-                                    <label>Vídeo no YouTube (URL)</label>
-                                    <input type="url" name="videoUrl" id="videoUrlInput"
-                                        placeholder="Ex: https://www.youtube.com/watch?v=...">
+                                    <label>V&iacute;deo no YouTube (URL)</label>
+                                    <input type="url" name="video" id="videoInput"
+                                        placeholder="Ex: https://www.youtube.com/watch?v=..."
+                                        oninput="document.getElementById('videoUrlHidden').value = this.value">
+                                    <input type="hidden" name="videoUrl" id="videoUrlHidden">
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label>Descrição completa</label>
+                                <label>Descri&ccedil;&atilde;o completa</label>
                                 <textarea name="description" id="descriptionInput" rows="9"
-                                    placeholder="Detalhes do anúncio, condições e observações."></textarea>
+                                    placeholder="Detalhes do an&uacute;ncio, condi&ccedil;&otilde;es e observa&ccedil;&otilde;es."></textarea>
                             </div>
                             <p class="help-text" style="margin-top:-4px;">Cole a URL normal do YouTube (watch ou
                                 youtu.be). O sistema converte para iframe automaticamente.</p>
@@ -1385,7 +1542,7 @@
                             </div>
 
                             <div class="form-group" style="margin-top:16px;">
-                                <label>Fotos (múltiplas)</label>
+                                <label>Fotos (m&uacute;ltiplas)</label>
                                 <div class="upload-zone">
                                     <input type="file" id="carImageFile" multiple
                                         accept="image/*,.heic,.HEIC,.heif,.HEIF">
@@ -1399,7 +1556,7 @@
                                     <label class="lifestyle-item"><input type="checkbox" name="lifestyle"
                                             value="dia-a-dia">Dia a dia</label>
                                     <label class="lifestyle-item"><input type="checkbox" name="lifestyle"
-                                            value="familia">Família</label>
+                                            value="familia">Fam&iacute;lia</label>
                                     <label class="lifestyle-item"><input type="checkbox" name="lifestyle"
                                             value="off-road">Off-road</label>
                                     <label class="lifestyle-item"><input type="checkbox" name="lifestyle"
@@ -1412,8 +1569,8 @@
                     <div class="step-nav">
                         <button type="button" class="btn-secondary" id="btnStepPrev" disabled>Anterior</button>
                         <div class="admin-actions" style="margin-left:auto;">
-                            <button type="button" class="btn-secondary" id="btnStepNext">Próximo</button>
-                            <button type="submit" class="btn-primary" id="btnSaveVehicle">Salvar Veículo</button>
+                            <button type="button" class="btn-secondary" id="btnStepNext">Pr&oacute;ximo</button>
+                            <button type="submit" class="btn-primary" id="btnSaveVehicle">Salvar Ve&iacute;culo</button>
                         </div>
                     </div>
                     <div id="saveFeedback" class="help-text" style="display:none; margin-top:8px; font-weight:500;">
@@ -1501,13 +1658,13 @@
 
                     <div class="stock-results" id="stockResultsCount">0 resultados</div>
                     <div id="adminCarList">
-                        <div class="help-text" style="padding:20px; text-align:center;">Carregando veículos...</div>
+                        <div class="help-text" style="padding:20px; text-align:center;">Carregando ve&iacute;culos...</div>
                     </div>
                 </div>
             </section>
 
             <section id="tab-integracoes" class="admin-tab" style="display:none;">
-                <h1 class="admin-page-title">Integrações</h1>
+                <h1 class="admin-page-title">Integra&ccedil;&otilde;es</h1>
                 <div class="integration-grid">
                     <div class="integration-card">
                         <div class="integration-head">
@@ -1520,19 +1677,17 @@
                                 </svg>
                             </span>
                             <h2 class="integration-title">Facebook Pixel</h2>
-                            <button type="button" class="toggle-switch" id="pixelToggle"
-                                aria-label="Ativar Facebook Pixel"></button>
                         </div>
-                        <p class="integration-desc">Rastreie eventos de visita e clique nos veículos.</p>
+                        <p class="integration-desc">Rastreie eventos de visita e clique nos ve&iacute;culos.</p>
                         <div class="form-group">
                             <label>ID do Pixel</label>
                             <input type="text" id="pixelIdInput" placeholder="Ex: 123456789012345">
                         </div>
                         <div class="admin-actions">
-                            <button type="button" class="btn-primary" id="savePixelBtn">Conectar</button>
+                            <button type="button" class="btn-primary" id="savePixelBtn">Conectar e Publicar</button>
                             <button type="button" class="btn-danger" id="removePixelBtn">Remover</button>
                             <a class="btn-secondary" href="https://www.facebook.com/business/help/952192354843755"
-                                target="_blank" rel="noopener">Ver documentação</a>
+                                target="_blank" rel="noopener">Ver documenta&ccedil;&atilde;o</a>
                         </div>
                     </div>
 
@@ -1549,7 +1704,7 @@
                             <button type="button" class="toggle-switch" id="gaToggle"
                                 aria-label="Ativar Google Analytics"></button>
                         </div>
-                        <p class="integration-desc">Acompanhe tráfego e comportamento dos usuários.</p>
+                        <p class="integration-desc">Acompanhe tr&aacute;fego e comportamento dos usu&aacute;rios.</p>
                         <div class="form-group">
                             <label>ID do GA</label>
                             <input type="text" id="gaIdInput" placeholder="Ex: G-XXXXXXXXXX">
@@ -1558,20 +1713,20 @@
                             <button type="button" class="btn-primary" id="saveGaBtn">Conectar</button>
                             <button type="button" class="btn-danger" id="removeGaBtn">Remover</button>
                             <a class="btn-secondary" href="https://support.google.com/analytics/answer/9304153"
-                                target="_blank" rel="noopener">Ver documentação</a>
+                                target="_blank" rel="noopener">Ver documenta&ccedil;&atilde;o</a>
                         </div>
                     </div>
                 </div>
             </section>
 
             <section id="tab-config" class="admin-tab" style="display:none;">
-                <h1 class="admin-page-title">Configurações</h1>
+                <h1 class="admin-page-title">Configura&ccedil;&otilde;es</h1>
 
                 <div class="settings-grid">
                     <div class="settings-section">
                         <h2 class="section-title" style="font-size:20px;">Contato Principal (WhatsApp)</h2>
                         <div class="form-group">
-                            <label>Número com DDD</label>
+                            <label>N&uacute;mero com DDD</label>
                             <input type="text" id="adminPhoneInput" placeholder="Ex: 5519999313717">
                         </div>
                         <div class="form-grid" style="margin-top:12px;">
@@ -1589,7 +1744,7 @@
                                     placeholder="Ex: contato@souzaselectcar.com.br">
                             </div>
                             <div class="form-group">
-                                <label>Endereço completo (Localização no site)</label>
+                                <label>Endere&ccedil;o completo (Localiza&ccedil;&atilde;o no site)</label>
                                 <input type="text" id="adminStoreAddressInput"
                                     placeholder="Ex: Av. M15, n. 784 - Rio Claro/SP - CEP 13505-320">
                             </div>
@@ -1598,11 +1753,11 @@
                     </div>
 
                     <div class="settings-section">
-                        <h2 class="section-title" style="font-size:20px;">Integrações</h2>
+                        <h2 class="section-title" style="font-size:20px;">Integra&ccedil;&otilde;es</h2>
                         <p class="help-text" style="margin:0 0 12px;">Gerencie Pixel e Google Analytics na aba de
-                            integrações.</p>
+                Integra&ccedil;&otilde;es
                         <button type="button" class="btn-secondary" onclick="AdminTabs.open('integracoes')">Ir para
-                            Integrações</button>
+                            Integra&ccedil;&otilde;es</button>
                     </div>
 
                 </div>
@@ -1612,20 +1767,22 @@
 
     <div class="admin-modal-overlay" id="deleteCarModal" aria-hidden="true">
         <div class="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="deleteCarModalTitle">
-            <h2 class="admin-modal-title" id="deleteCarModalTitle">Confirmar Exclusão</h2>
-            <p class="admin-modal-text">Tem certeza que deseja excluir este veículo? Essa ação não pode ser desfeita.
+            <h2 class="admin-modal-title" id="deleteCarModalTitle">Confirmar Exclus&atilde;o</h2>
+            <p class="admin-modal-text">Tem certeza que deseja excluir este ve&iacute;culo? Essa a&ccedil;&atilde;o n&atilde;o pode ser desfeita.
             </p>
             <div class="admin-actions" style="justify-content:flex-end;">
                 <button type="button" class="btn-secondary" id="deleteCarModalCancel">Cancelar</button>
-                <button type="button" class="btn-danger btn-danger-solid" id="deleteCarModalConfirm">Excluir
-                    Veículo</button>
+                <button type="button" class="btn-danger btn-danger-solid" id="deleteCarModalConfirm">Excluir Ve&iacute;culo</button>
+
             </div>
         </div>
     </div>
 
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script defer src="https://unpkg.com/heic2any@0.0.4/dist/heic2any.min.js"></script>
-    <script defer src="script.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script defer src="script.js?v=20260217-30"></script>
     <script>
         window.AdminTabs = {
             map: {
@@ -1666,6 +1823,177 @@
             window.AdminTabs.open('painel');
         });
     </script>
+    <style>
+        .manual-toggle-btn {
+            display: inline-block;
+            margin-top: 4px;
+            font-size: 12px;
+            color: #ff6b00;
+            text-decoration: none;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .manual-toggle-btn:hover {
+            text-decoration: underline;
+        }
+
+        .manual-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // SISTEMA SIMPLES: ALTERNAR ENTRE FIPE (SELECT) E MANUAL (INPUT)
+
+            function setupManualMode(selectId) {
+                const select = document.getElementById(selectId);
+                if (!select) return;
+
+                // Garante que o select esteja visivel (caso o script antigo tenha escondido)
+                select.style.display = 'block';
+
+                // Cria o input manual (escondido)
+                const input = document.createElement('input');
+                input.className = 'manual-input';
+                input.placeholder = 'Digite manualmente aqui...';
+
+                // Cria o link de alternancia
+                const toggle = document.createElement('a');
+                toggle.className = 'manual-toggle-btn';
+                toggle.innerText = 'Nao encontrou? Digitar manualmente';
+
+                // Insere no DOM
+                select.parentNode.insertBefore(input, select.nextSibling);
+                select.parentNode.insertBefore(toggle, input.nextSibling);
+
+                let isManual = false;
+
+                toggle.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    isManual = !isManual;
+
+                    if (isManual) {
+                        // Ativa MANUAL
+                        select.style.display = 'none';
+                        input.style.display = 'block';
+                        toggle.innerText = 'Voltar para lista (FIPE)';
+                        input.value = select.options[select.selectedIndex]?.text || '';
+                        input.focus();
+                        // Forca valor manual no select (truque)
+                        select.setAttribute('data-manual-active', 'true');
+                    } else {
+                        // Volta para FIPE
+                        select.style.display = 'block';
+                        input.style.display = 'none';
+                toggle.innerText = 'Nao encontrou? Digitar manualmente';
+                        select.removeAttribute('data-manual-active');
+                    }
+                });
+
+                // Sincroniza input -> select (para o formulario pegar o valor)
+                input.addEventListener('input', () => {
+                    if (isManual) {
+                        // Cria option temporaria se nao existir
+                        let opt = select.querySelector('option[data-manual-temp]');
+                        if (!opt) {
+                            opt = document.createElement('option');
+                            opt.setAttribute('data-manual-temp', 'true');
+                            select.appendChild(opt);
+                        }
+                        opt.value = input.value;
+                        opt.text = input.value;
+                        opt.selected = true;
+                        // Dispara change para o sistema saber que mudou
+                        select.dispatchEvent(new Event('change'));
+                    }
+                });
+            }
+
+            // Aplica aos campos apos carregar
+            setTimeout(() => {
+                // Remove qualquer resquicio do script antigo se houver
+                document.querySelectorAll('.searchable-select-wrapper').forEach(el => el.remove());
+
+                setupManualMode('brandSelect');
+                setupManualMode('modelSelect');
+                setupManualMode('yearSelect');
+                setupManualMode('versionSelect');
+            }, 1000);
+        });
+    </script>
+    <script>
+        // SCRIPT DE SEGURANCA E INTEGRIDADE DO VIDEO
+        // Garante que o campo de video seja carregado e salvo, independente do script original
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // 1. Monkey Patch na funcao editCar para carregar o video
+            // Aguarda o script.js carregar e definir as funcoes globais
+            setTimeout(() => {
+                const originalEditCar = window.editCar;
+
+                if (typeof originalEditCar === 'function') {
+                    window.editCar = function (id) {
+                        // Chama a funcao original primeiro
+                        originalEditCar(id);
+
+                        // Depois tenta preencher o video
+                        setTimeout(() => {
+                            const car = (window.carsData || []).find(c => Number(c.id) === Number(id));
+                            if (car) {
+                                const videoVal = car.video || car.videoUrl || '';
+                                const videoInput = document.getElementById('videoInput');
+                                const videoHidden = document.getElementById('videoUrlHidden');
+
+                                if (videoInput) videoInput.value = videoVal;
+                                if (videoHidden) videoHidden.value = videoVal;
+
+                                console.log('[VideoIntegrity] Tentei carregar video:', videoVal);
+                            }
+                        }, 500); // Delay maior para garantir que o modal abriu e limpou campos
+                    };
+                    console.log('[VideoIntegrity] Funcao editCar interceptada com sucesso.');
+                }
+            }, 2000);
+
+            // 2. Intercepta o Salvamento
+            const btnSave = document.getElementById('btnSaveVehicle');
+            if (btnSave) {
+                btnSave.addEventListener('mouseenter', syncVideoFields);
+                btnSave.addEventListener('touchstart', syncVideoFields);
+                btnSave.addEventListener('click', syncVideoFields);
+            }
+
+            function syncVideoFields() {
+                const videoInput = document.getElementById('videoInput');
+                const videoHidden = document.getElementById('videoUrlHidden');
+
+                if (videoInput) {
+                    const val = videoInput.value;
+                    if (videoHidden) videoHidden.value = val;
+
+                    // Tenta injetar no form data se tiver acesso, ou garante que o hidden tenha name adequado
+                    // Ja configuramos name="video" e name="videoUrl" nos inputs
+                }
+            }
+        });
+    </script>
 </body>
 
+
 </html>
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,155 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ðŸ› ï¸ CORRIGIR NOMES REPETIDOS</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 40px;
+            background: #f0f0f0;
+            text-align: center;
+        }
+
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #d32f2f;
+        }
+
+        button {
+            background: #d32f2f;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background: #b71c1c;
+        }
+
+        #log {
+            margin-top: 20px;
+            text-align: left;
+            background: #eee;
+            padding: 15px;
+            border-radius: 5px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="box">
+        <h1>ðŸ› ï¸ Corretor de Banco de Dados</h1>
+        <p>Este script vai varrer todos os veÃ­culos salvos no seu navegador e corrigir os nomes repetidos (Ex:
+            "Volkswagen Virtus Msi Volkswagen...").</p>
+
+        <button onclick="corrigirAgora()">CORRIGIR AGORA</button>
+
+        <div id="log">Aguardando...</div>
+    </div>
+
+    <script>
+        function log(msg) {
+            const el = document.getElementById('log');
+            el.innerHTML += `<div>${msg}</div>`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function corrigirAgora() {
+            log('ðŸ”„ Iniciando correÃ§Ã£o...');
+
+            try {
+                // 1. Ler dados do localStorage
+                const rawData = localStorage.getItem('souza_cars');
+                if (!rawData) {
+                    log('âŒ Nenhum dado encontrado em "souza_cars"');
+                    return;
+                }
+
+                let cars = JSON.parse(rawData);
+                log(`ðŸ“Š Encontrados ${cars.length} veÃ­culos.`);
+
+                let corrigidos = 0;
+
+                // 2. Varrer e Corrigir
+                cars = cars.map(car => {
+                    const originalTitle = car.title || '';
+
+                    // Se o tÃ­tulo for muito longo e repetitivo, ou se quisermos forÃ§ar o padrÃ£o
+                    if (originalTitle.length > 50 || originalTitle.includes(car.brand) && originalTitle.includes(car.model)) {
+
+                        // ReconstrÃ³i o tÃ­tulo limpo: Marca + Modelo + VersÃ£o
+                        const brand = (car.brand || '').trim();
+                        const model = (car.model || '').trim();
+                        const version = (car.version || '').trim();
+
+                        // Limpa versÃ£o se ela jÃ¡ contiver marca/modelo
+                        let cleanVersion = version;
+                        if (cleanVersion.toLowerCase().includes(brand.toLowerCase())) {
+                            cleanVersion = cleanVersion.replace(new RegExp(brand, 'gi'), '').trim();
+                        }
+                        if (cleanVersion.toLowerCase().includes(model.toLowerCase())) {
+                            cleanVersion = cleanVersion.replace(new RegExp(model, 'gi'), '').trim();
+                        }
+
+                        const newTitle = `${brand} ${model} ${cleanVersion}`.trim();
+
+                        if (newTitle !== originalTitle) {
+                            log(`ðŸ”§ Corrigido: "${originalTitle.substr(0, 30)}..." -> "${newTitle}"`);
+                            car.title = newTitle;
+                            // TambÃ©m corrige a versÃ£o isolada se estiver suja
+                            car.version = cleanVersion;
+                            corrigidos++;
+                        }
+                    }
+                    return car;
+                });
+
+                // 3. Salvar de volta
+                if (corrigidos > 0) {
+                    localStorage.setItem('souza_cars', JSON.stringify(cars));
+
+                    // Limpa estatÃ­sticas tambÃ©m, pois elas podem conter os nomes velhos
+                    localStorage.removeItem('souza_analytics_top_vehicle');
+
+                    log(`âœ… SUCESSO! ${corrigidos} veÃ­culos corrigidos.`);
+                    log('ðŸ”„ Redirecionando para o Admin em 3 segundos...');
+                    setTimeout(() => window.location.href = 'admin.html', 3000);
+                } else {
+                    log('âœ… Nenhum veÃ­culo precisou de correÃ§Ã£o.');
+                }
+
+            } catch (e) {
+                log('âŒ ERRO: ' + e.message);
+                console.error(e);
+            }
+        }
+    </script>
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+

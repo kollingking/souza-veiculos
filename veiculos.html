@@ -37,30 +37,15 @@
         rel="stylesheet">
 
     <!-- Stylesheets -->
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260216-3">
 
     <!-- Supabase -->
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- Facebook Pixel Code -->
-    <script>
-        !function (f, b, e, v, n, t, s) {
-            if (f.fbq) return; n = f.fbq = function () {
-                n.callMethod ?
-                    n.callMethod.apply(n, arguments) : n.queue.push(arguments)
-            };
-            if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
-            n.queue = []; t = b.createElement(e); t.async = !0;
-            t.src = v; s = b.getElementsByTagName(e)[0];
-            s.parentNode.insertBefore(t, s)
-        }(window, document, 'script',
-            'https://connect.facebook.net/en_US/fbevents.js');
-        fbq('init', 'SEU-ID-DO-PIXEL-AQUI');
-        fbq('track', 'PageView');
-        fbq('track', 'ViewContent'); // Track verification of stock
-    </script>
-    <noscript><img height="1" width="1" style="display:none"
-            src="https://www.facebook.com/tr?id=SEU-ID-DO-PIXEL-AQUI&ev=PageView&noscript=1" /></noscript>
+    <!-- Config (Pixel/Analytics) -->
+    <script defer src="config.js?v=20260216-6"></script>
+
+    <!-- Pixel/Analytics: carregados dinamicamente via script.js usando o config salvo no admin -->
     <!-- SEO & Social Sharing (Open Graph) -->
     <meta property="og:title" content="Veículos - Souza Select Car">
     <meta property="og:description" content="Confira nossos veículos seminovos e novos com garantia de qualidade.">
@@ -83,9 +68,10 @@
             <nav class="nav-desktop">
                 <ul>
                     <li><a href="index.html#hero">Início</a></li>
-                    <li><a href="veiculos.html" class="active">Veículos</a></li>
+                    <li><a href="veiculos.html" class="active">Estoque</a></li>
                     <li><a href="index.html#sobre-nos">Sobre Nós</a></li>
                     <li><a href="https://wa.me/5519999313717">Contato</a></li>
+                    <li><a href="login.html" class="restricted-link">Área Restrita</a></li>
                 </ul>
             </nav>
             <div class="header-actions">
@@ -121,6 +107,7 @@
                     <li><a href="veiculos.html" class="active">Veículos</a></li>
                     <li><a href="index.html#sobre-nos">Sobre Nós</a></li>
                     <li><a href="https://wa.me/5519999313717">Contato</a></li>
+                    <li class="restricted-item"><a href="login.html" class="restricted-link">Área Restrita</a></li>
                 </ul>
             </nav>
         </div>
@@ -204,9 +191,8 @@
                         <h4>Contato</h4>
                         <p style="color: rgba(255, 255, 255, 0.75); margin-bottom:10px; font-size: 0.9em;">
                             <strong>Endere&ccedil;o:</strong><br>
-                            Av. M15, n&ordm; 784<br>
-                            Rio Claro/SP<br>
-                            CEP 13505-320
+                            <span class="footer-address-line">Av. M15, n&ordm; 784</span>
+                            <span class="footer-city">Rio Claro/SP</span>
                         </p>
                         <p style="color: rgba(255, 255, 255, 0.75); margin-bottom:10px; font-size: 0.9em;">
                             <strong>Telefone / WhatsApp:</strong><br>
@@ -227,8 +213,7 @@
                     <a href="#"
                         style="color: rgba(255, 255, 255, 0.6); text-decoration: none; font-size: 14px;">Política de
                         privacidade</a>
-                    <a href="login.html"
-                        class="restricted-link" style="color: var(--primary); opacity: 0.9; text-decoration: none; font-size: 14px;">Área Restrita</a>
+                    <!-- Área Restrita fica no menu (header/mobile). -->
                 </div>
             </div>
         </div>
@@ -245,7 +230,17 @@
             </svg>
         </a>
     </div>
-    <script defer src="script.js"></script>
+    <script defer src="script.js?v=20260217-30"></script>
 </body>
 
 </html>
+
+
+
+
+
+
+
+
+
+

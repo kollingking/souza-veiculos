@@ -210,7 +210,7 @@ body.dark-mode .restricted-link {
 html {
     scroll-behavior: smooth;
     scroll-padding-top: var(--scroll-offset);
-    /* Evita que o header cubra o conteúdo das âncoras */
+    /* Evita que o header cubra o conteÃƒÂºdo das ÃƒÂ¢ncoras */
 }
 
 body {
@@ -696,6 +696,30 @@ footer {
     text-align: center;
     padding: 0 20px;
     animation: fadeInUp 1s ease;
+}
+
+/* Mobile: reset "xeque-mate" do Hero (sem coluna fantasma, 100% largura, centralizado) */
+@media (max-width: 480px) {
+    .hero-content {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+        padding: 10px 16px !important;
+        box-sizing: border-box;
+    }
+
+    .hero-title,
+    .hero-subtitle {
+        text-align: center !important;
+        width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
 }
 
 .hero-title {
@@ -1796,6 +1820,24 @@ footer {
     border-color: rgba(255, 122, 26, 0.52);
 }
 
+/* Restrito no header: compacto e sem sublinhado animado */
+.nav-desktop .restricted-link {
+    min-height: auto;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    line-height: 1;
+}
+
+.nav-desktop .restricted-link::after {
+    display: none;
+}
+
+.mobile-menu .restricted-link {
+    width: 100%;
+    justify-content: center;
+    margin-top: 6px;
+}
+
 /* ===== WhatsApp Button ===== */
 .whatsapp-btn {
     position: fixed;
@@ -1876,8 +1918,8 @@ footer {
 
 @media (max-width: 768px) {
     :root {
-        --header-height: 72px;
-        --scroll-offset: 88px;
+        --header-height: 60px;
+        --scroll-offset: 76px;
     }
 
     .header {
@@ -1888,6 +1930,11 @@ footer {
         height: var(--header-height);
         padding-top: 0;
         padding-bottom: 0;
+        padding-left: 12px;
+        padding-right: 12px;
+        position: relative;
+        /* Layout travado no mobile: logo a esquerda, acoes a direita (igual ao print) */
+        display: block;
     }
 
     .nav-desktop {
@@ -1897,12 +1944,45 @@ footer {
 
     .header-actions {
         display: flex !important;
-        flex: 1;
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        flex: 0 0 auto;
         justify-content: flex-end;
+        gap: 12px;
     }
 
     .mobile-menu-btn {
         display: flex;
+        padding: 6px;
+    }
+
+    /* Mobile header igual ao print: logo pequeno Ã  esquerda */
+    .header .logo {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        margin: 0;
+    }
+
+    .logo-img {
+        height: 24px;
+        width: auto;
+    }
+
+    .theme-toggle {
+        margin-left: 0;
+    }
+
+    .theme-toggle {
+        width: 34px;
+        height: 34px;
+    }
+
+    .mobile-menu-btn span {
+        width: 22px;
     }
 
     .hero {
@@ -1983,7 +2063,7 @@ footer {
     font-size: 2rem;
     font-weight: 800;
     text-transform: none;
-    /* Garante Gramática Correta */
+    /* Garante GramÃƒÂ¡tica Correta */
 }
 
 @media (max-width: 900px) {
@@ -2008,7 +2088,7 @@ footer {
         margin-bottom: 20px;
     }
 
-    /* 2. Painel Principal (Nome, Preço etc) */
+    /* 2. Painel Principal (Nome, PreÃƒÂ§o etc) */
     .info-card {
         order: 3;
         position: static;
@@ -2023,7 +2103,7 @@ footer {
         margin-bottom: 30px;
     }
 
-    /* 4. Descrição */
+    /* 4. DescriÃƒÂ§ÃƒÂ£o */
     .description-box {
         order: 5;
     }
@@ -2937,6 +3017,119 @@ footer {
     color: var(--text-primary);
 }
 
+/* Mobile: 3 quadrados lado a lado (compacto) */
+@media (max-width: 480px) {
+    .price-range-section {
+        padding: 18px 0 34px;
+    }
+
+    .price-range-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .price-range-card {
+        padding: 10px 8px;
+        border-radius: 16px;
+        aspect-ratio: 1 / 1;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .price-range-icon {
+        width: 42px;
+        height: 42px;
+        margin-bottom: 8px;
+    }
+
+    .price-range-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .price-range-title {
+        font-size: 0.82rem;
+        line-height: 1.15;
+        margin: 0;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+    }
+}
+
+/* Mobile: categorias em carrossel (3 quadrados por vez) */
+@media (max-width: 480px) {
+    .categories-section {
+        padding: 34px 0;
+    }
+
+    .categories-grid {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 8px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        padding: 2px 2px 10px;
+        touch-action: pan-x;
+    }
+
+    .categories-grid::-webkit-scrollbar {
+        display: none;
+    }
+
+    .category-card {
+        flex: 0 0 calc((100% - 16px) / 3);
+        padding: 12px 8px;
+        gap: 8px;
+        border-radius: 16px;
+        scroll-snap-align: start;
+        aspect-ratio: 1 / 1;
+        justify-content: center;
+    }
+
+    .category-icon {
+        width: 42px;
+        height: 42px;
+    }
+
+    .category-icon svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    .category-card span {
+        font-size: 0.82rem;
+        line-height: 1.1;
+    }
+}
+
+/* Mobile: filtros "Nossos Veiculos" fixos na mesma linha (4 colunas) */
+@media (max-width: 480px) {
+    .featured-filters {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 22px;
+    }
+
+    .filter-btn {
+        width: 100%;
+        padding: 8px 6px;
+        font-size: 0.82rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+@media (max-width: 360px) {
+    .filter-btn {
+        padding: 8px 5px;
+        font-size: 0.78rem;
+    }
+}
+
 /* Better Mobile Adjustments */
 @media (max-width: 768px) {
     .whatsapp-float-container {
@@ -3021,7 +3214,7 @@ footer {
     stroke: #fff;
 }
 
-/* Animação do ícone */
+/* AnimaÃƒÂ§ÃƒÂ£o do ÃƒÂ­cone */
 .theme-toggle .icon-sun {
     display: block;
 }
@@ -3038,7 +3231,7 @@ body.dark-mode .theme-toggle .icon-moon {
     display: block;
 }
 
-/* Transição suave de cor de fundo */
+/* TransiÃƒÂ§ÃƒÂ£o suave de cor de fundo */
 body {
     transition: background-color var(--transition-normal), color var(--transition-normal);
 }
@@ -4926,4 +5119,1512 @@ button,
     .vehicle-page.vehicle-v2 .vehicle-carousel-section .vehicle-carousel-btn.mini {
         display: none;
     }
+}
+
+/* === BETTER MOBILE FOOTER === */
+/* Compacta o rodapÃ© em 2 colunas no mobile para economizar espaÃ§o vertical */
+@media (max-width: 768px) {
+    footer .container {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px 16px; /* Row gap 24, Col gap 16 */
+        text-align: left;
+    }
+
+    footer .footer-brand {
+        grid-column: 1 / -1; /* Logo ocupa largura total no topo */
+        text-align: center;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    footer .footer-links {
+        width: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    footer .footer-links h4 {
+        font-size: 1rem;
+        margin-bottom: 12px;
+        border-left: 3px solid var(--primary);
+        padding-left: 8px;
+    }
+
+    footer .footer-links ul li {
+        margin-bottom: 8px;
+    }
+    
+    footer .footer-links p {
+        font-size: 0.85rem !important;
+        line-height: 1.4;
+    }
+
+    /* Oculta textos muito longos ou ajusta se necessÃ¡rio */
+    .footer-bottom {
+        text-align: center;
+        padding-top: 20px;
+        margin-top: 20px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+    }
+}
+
+
+
+/* CORREÃ‡ÃƒO DE CAIXA BRANCA INDESEJADA */
+/* Garante que elementos com atributo 'hidden' sumam de verdade,
+   sobrepondo regras de display grid/flex que podem ignorar o atributo */
+
+[hidden] {
+    display: none !important;
+}
+
+.vehicle-mosaic-wrap[hidden],
+#detailsMosaicWrap[hidden] {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+
+
+/* === CORREÃ‡ÃƒO DEFINITIVA DO FOOTER MOBILE (GRID 2 COLUNAS) === */
+@media (max-width: 768px) {
+    /* ForÃ§a o container dos itens a usar Grid de 2 colunas */
+    .footer-content {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 20px 10px !important;
+        align-items: start !important;
+    }
+
+    /* Garante que o Logo/Marca ocupe a linha inteira no topo */
+    .footer-brand {
+        grid-column: 1 / -1 !important;
+        text-align: center !important;
+        margin-bottom: 15px !important;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* Os blocos de links (Comprar, Info, Contato) agora ficam lado a lado */
+    .footer-links {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Ajustes para caber melhor na coluna estreita */
+    .footer-links h4 {
+        font-size: 1rem !important;
+        margin-bottom: 10px !important;
+    }
+
+    .footer-links p, .footer-links li {
+        font-size: 0.85rem !important;
+        line-height: 1.4 !important;
+    }
+}
+
+
+
+/* === CORREÃ‡ÃƒO FINAL FOOTER MOBILE (FLEXBOX) === */
+/* Trocando Grid por Flexbox para garantir que fiquem lado a lado (48% cada) */
+@media (max-width: 768px) {
+    .footer-content {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: space-between !important;
+        gap: 0 !important; /* Remove gap do grid, usa space-between */
+    }
+
+    .footer-brand {
+        width: 100% !important;
+        margin-bottom: 15px !important;
+        text-align: center !important;
+    }
+
+    /* ForÃ§a os blocos a ocuparem metade da tela menos um tiquinho */
+    .footer-links {
+        width: 48% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Reduz um pouco o tÃ­tulo e texto para nÃ£o estourar */
+    .footer-links h4 {
+        font-size: 0.9rem !important;
+        margin-bottom: 8px !important;
+        white-space: nowrap; /* Evita quebra do tÃ­tulo 'Contato' */
+    }
+    
+    .footer-links p, .footer-links li, .footer-links a {
+        font-size: 0.8rem !important;
+        line-height: 1.3 !important;
+        word-wrap: break-word !important; /* ForÃ§a quebra de endereÃ§o longo */
+    }
+}
+
+
+
+/* === REFORÃ‡O FINAL FOOTER === */
+/* Garante reset total de layout para flexbox */
+@media (max-width: 768px) {
+    .footer-content {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: flex-start !important;
+    }
+
+    .footer-brand {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+        margin-bottom: 20px !important;
+    }
+
+    .footer-links {
+        flex: 0 0 48% !important;
+        max-width: 48% !important;
+        width: 48% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Garante que imagens ou iframes nÃ£o estourem */
+    .footer-links * {
+        max-width: 100% !important;
+    }
+}
+
+
+
+/* === AJUSTE FINO DE ESPAÃ‡AMENTO FOOTER MOBILE === */
+@media (max-width: 768px) {
+    /* Aumenta o respiro entre os blocos */
+    .footer-content {
+        justify-content: space-between !important; 
+        gap: 15px !important; /* Adiciona gap explÃ­cito */
+    }
+
+    /* Reduz largura para 44% cada -> Gera um buraco de ~12% no meio */
+    .footer-links {
+        flex: 0 0 44% !important; 
+        max-width: 44% !important;
+    }
+    
+    /* Garante alinhamento Ã  esquerda e evita colagem */
+    .footer-links:nth-child(2) { /* Primeiro bloco de links (Comprar) */
+        text-align: left !important;
+    }
+    .footer-links:nth-child(3) { /* Segundo bloco de links (Contato) */
+        text-align: left !important;
+        padding-left: 10px !important; /* Extra padding visual */
+    }
+}
+
+
+
+/* === REORGANIZAÃ‡ÃƒO UI/UX PREMIUM DO FOOTER MOBILE === */
+@media (max-width: 768px) {
+    /* 1. Reset e DefiniÃ§Ã£o do Grid com Respiro */
+    .footer-content {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important; /* DivisÃ£o exata meio a meio */
+        gap: 30px 20px !important; /* 30px vertical entre linhas, 20px horizontal entre colunas */
+        padding-left: 15px !important; /* Margem de seguranÃ§a lateral */
+        padding-right: 15px !important;
+        align-items: start !important;
+        
+        /* Remove regras flex anteriores */
+        flex-direction: row !important; 
+        flex-wrap: wrap !important;
+    }
+
+    /* 2. Marca/Logo - Ocupa largura total no topo */
+    .footer-brand {
+        grid-column: 1 / -1 !important; /* Span full width */
+        width: 100% !important;
+        text-align: center !important;
+        margin-bottom: 10px !important;
+        padding-bottom: 20px !important;
+        border-bottom: 1px solid rgba(255,255,255,0.08); /* Divisor sutil */
+    }
+
+    /* 3. Colunas de Links (Comprar e Contato) */
+    .footer-links {
+        width: auto !important; /* Deixa o grid controlar a largura */
+        max-width: none !important;
+        flex: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        text-align: left !important; /* Alinhamento estrito Ã  esquerda */
+    }
+
+    /* Remove alinhamentos especÃ­ficos anteriores */
+    .footer-links:nth-child(2), 
+    .footer-links:nth-child(3) {
+        text-align: left !important;
+        padding-left: 0 !important;
+    }
+
+    /* 4. Tipografia e Leitura (UX) */
+    .footer-links h4 {
+        font-size: 1rem !important;
+        margin-bottom: 15px !important;
+        color: var(--primary); /* Destaque visual */
+        letter-spacing: 0.5px;
+    }
+
+    .footer-links p, 
+    .footer-links li, 
+    .footer-links a {
+        font-size: 0.85rem !important;
+        line-height: 1.6 !important; /* Respiro vertical para leitura */
+        color: rgba(255,255,255,0.85) !important;
+        word-break: break-word !important; /* Evita quebra de layout segura */
+        overflow-wrap: break-word !important; /* Suporte moderno */
+    }
+
+    /* Ajuste especÃ­fico para nÃ£o quebrar palavra 'EndereÃ§o' ou cidade de forma feia */
+    .footer-links p strong { 
+        display: block; 
+        margin-bottom: 4px;
+        color: #fff;
+    }
+}
+
+
+
+/* === ULTRA SEPARAÃ‡ÃƒO DO FOOTER MOBILE === */
+@media (max-width: 768px) {
+    .footer-content {
+        /* Aumenta o gap horizontal para 40px (muito espaÃ§o!) */
+        gap: 30px 40px !important; 
+    }
+    
+    /* Garante que o texto seja levemente menor para caber com tanto espaÃ§o no meio */
+    .footer-links p, 
+    .footer-links li, 
+    .footer-links a {
+        font-size: 0.8rem !important; /* Reduz fonte para 13px aprox */
+        letter-spacing: 0.3px !important;
+    }
+
+    /* Remove qualquer margem que possa estar atrapalhando o alinhamento */
+    .footer-links {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+}
+
+
+
+/* === CORREÃ‡ÃƒO FINAL DE LAYOUT E QUEBRA DE LINHA === */
+@media (max-width: 768px) {
+    .footer-content {
+        display: flex !important;
+        justify-content: center !important; /* Centraliza os blocos na tela */
+        gap: 15px !important;            /* EspaÃ§o suficiente, mas nÃ£o exagerado */
+        padding: 0 5px !important;       /* Remove padding excessivo das bordas */
+    }
+
+    .footer-links {
+        flex: 1 !important;              /* Cresce igualmente para ocupar espaÃ§o */
+        text-align: center !important;   /* Centraliza o texto (Rio Claro fica no meio) */
+        min-width: 0 !important;         /* Permite encolher se necessÃ¡rio */
+    }
+
+    /* TRUQUE PARA EVITAR QUEBRA FEIA EM CIDADES/TELEFONES */
+    /* ForÃ§a o texto a tentar ficar na mesma linha se possÃ­vel */
+    .footer-links p, 
+    .footer-links a, 
+    .footer-links li {
+        font-size: 0.8rem !important;    /* Fonte 13px ideal para mobile */
+        white-space: nowrap !important;  /* PROÃBE quebrar 'Rio Claro/SP' no meio */
+        overflow: visible !important;    /* Deixa vazar um pouquinho se precisar, melhor que quebrar */
+        line-height: 1.8 !important;     /* EspaÃ§amento vertical bom */
+    }
+
+    /* Ajuste especÃ­fico para o endereÃ§o que tem <br> no HTML */
+    .footer-links p {
+        white-space: normal !important; /* O bloco P pode quebrar */
+    }
+    
+    .footer-links p span, 
+    .footer-links p strong {
+        white-space: nowrap !important; /* Mas os trechos dentro dele nÃ£o quebram */
+    }
+}
+
+
+
+/* === RESTAURAÃ‡ÃƒO DO LAYOUT DESKTOP === */
+/* NecessÃ¡rio pois removemos o estilo inline do detalhes.html */
+.footer-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 40px;
+    width: 100%;
+}
+
+/* No desktop, o brand pode ter limite de largura se necessÃ¡rio */
+@media (min-width: 769px) {
+    .footer-brand p {
+        max-width: 300px; /* Evita que o texto fique muito largo */
+    }
+}
+
+
+
+/* === CORREÃ‡ÃƒO ESTRUTURAL SENIOR (FOOTER MOBILE) === */
+@media (max-width: 768px) {
+    /* Container Flex com preenchimento generoso e espaÃ§amento seguro */
+    .footer-content {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 25px 10px !important; /* 25px vertical, 10px horizontal */
+        padding: 30px 20px !important; /* Preenchimento lateral e vertical */
+        justify-content: space-between !important; /* Distribui as colunas */
+        background: transparent !important; /* Garante fundo limpo */
+    }
+
+    /* Marca: Ocupa 100% e mantÃ©m o fluxo do documento */
+    .footer-brand {
+        flex: 0 0 100% !important;
+        width: 100% !important;
+        margin-bottom: 20px !important;
+        text-align: left !important;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        padding-bottom: 20px;
+    }
+
+    /* Colunas: 48% cada para garantir lado a lado sem colisÃ£o */
+    .footer-links {
+        flex: 0 0 48% !important;
+        width: 48% !important;
+        max-width: 48% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        text-align: left !important; /* Alinhamento consistente */
+    }
+
+    /* TÃ­tulos com respiro inferior */
+    .footer-links h4 {
+        margin-bottom: 15px !important;
+        font-size: 1rem !important;
+        display: block !important;
+    }
+
+    /* Tipografia ajustada: Leitura confortÃ¡vel e espaÃ§ada */
+    .footer-links p, 
+    .footer-links li, 
+    .footer-links a {
+        font-size: 13.5px !important; /* Tamanho legÃ­vel */
+        line-height: 1.6 !important; /* EspaÃ§o entre linhas do endereÃ§o */
+        color: rgba(255,255,255,0.8) !important;
+        word-break: break-word !important; /* SeguranÃ§a contra quebra */
+        display: block !important;
+    }
+
+    /* Garante que o telefone e cidade nÃ£o quebrem no meio da palavra se possÃ­vel */
+    .js-admin-phone-display {
+        white-space: nowrap !important;
+    }
+}
+
+
+
+/* === CORREÃ‡ÃƒO FINALISSIMA: GRID 2 COLUNAS LADO A LADO === */
+/* Substitui qualquer regra flex anterior que possa estar quebrando linha */
+@media (max-width: 768px) {
+    .footer-content {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important; /* FORÃ‡A LADO A LADO MATEMATICAMENTE */
+        gap: 30px 15px !important; /* EspaÃ§o vertical 30px, horizontal 15px */
+        padding: 20px 15px !important;
+        justify-items: start !important; /* Alinha tudo Ã  esquerda */
+    }
+
+    .footer-brand {
+        grid-column: 1 / -1 !important; /* Marca ocupa linha inteira no topo */
+        width: 100% !important;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding-bottom: 15px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .footer-links {
+        width: 100% !important; /* Ocupa toda a cÃ©lula do grid */
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Ajuste para evitar que palavras longas quebrem o grid */
+    .footer-links p, 
+    .footer-links ul, 
+    .footer-links li {
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        white-space: normal !important; /* Permite quebrar linha se precisar */
+    }
+}
+
+
+
+/* === CORREÃ‡ÃƒO FINAL BASEADA IMAGEM (TEXTO Ã€ ESQUERDA) === */
+@media (max-width: 768px) {
+    .footer-content {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important; /* DivisÃ£o meio a meio perfeita */
+        gap: 30px 20px !important; /* 30px vertical, 20px distÃ¢ncia horizontal */
+        padding: 0 20px !important; /* Margem lateral da tela */
+        justify-items: start !important; /* Alinha os blocos Ã  esquerda */
+    }
+
+    /* Marca centralizada no topo */
+    .footer-brand {
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+        text-align: center !important;
+        margin-bottom: 20px !important;
+    }
+
+    /* Colunas de Links: Alinhadas Ã  Esquerda (fundamental para a leitura do endereÃ§o) */
+    .footer-links {
+        width: 100% !important;
+        text-align: left !important; /* ISSO CORRIGE O VISUAL */
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Tipografia limpa e legÃ­vel */
+    .footer-links p, 
+    .footer-links li, 
+    .footer-links a {
+        font-size: 0.85rem !important;
+        line-height: 1.5 !important;
+        white-space: normal !important; /* Permite quebra natural */
+        color: rgba(255,255,255,0.85) !important;
+    }
+}
+
+
+
+/* === ULTRA SEPARAÃ‡ÃƒO FOOTER MOBILE (CONTATO Ã€ DIREITA) === */
+@media (max-width: 768px) {
+    .footer-content {
+        display: flex !important; /* Flex para controle total */
+        flex-direction: row !important; /* Lado a lado */
+        justify-content: space-between !important; /* Cola nas extremidades */
+        align-items: flex-start !important;
+        padding: 0 10px !important; /* Margem da tela */
+        gap: 40px !important; /* GAP GIGANTE: Empurra Contato para longe de Comprar */
+    }
+
+    .footer-links:nth-child(2) { /* Coluna Comprar */
+        flex: 0 0 auto !important; /* Ocupa sÃ³ o necessÃ¡rio */
+        text-align: left !important;
+    }
+
+    .footer-links:nth-child(3) { /* Coluna Contato */
+        flex: 1 !important; /* Ocupa o resto do espaÃ§o */
+        text-align: right !important; /* Alinha texto Ã  direita? NÃ£o, vocÃª pediu 'pra frente', nÃ£o alinhamento de texto */
+        /* Mas vou manter text-align left para leitura e usar margin-left */
+        text-align: left !important;
+        padding-left: 20px !important; /* Empurra o conteÃºdo ainda mais pra direita */
+    }
+}
+
+
+
+/* === REORGANIZAÃ‡ÃƒO VISUAL BASEADA NA IMAGEM DE REFERÃŠNCIA === */
+@media (max-width: 768px) {
+    .footer-content {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important; /* Grid puro de 2 colunas */
+        gap: 50px !important; /* GAP MUITO GRANDE para jogar o Contato bem pra frente */
+        padding: 0 10px !important;
+        align-items: start !important;
+        justify-content: start !important;
+    }
+
+    /* Marca ocupa o topo centralizado */
+    .footer-brand {
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+        text-align: center !important;
+        margin-bottom: 30px !important; /* Mais espaÃ§o antes das colunas */
+    }
+
+    /* ConfiguraÃ§Ã£o das Colunas */
+    .footer-links {
+        width: 100% !important;
+        min-width: 0 !important;
+        text-align: left !important; /* Garante alinhamento Ã  ESQUERDA como na foto */
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* TÃ­tulos (Comprar / Contato) */
+    .footer-links h4 {
+        border-left: 3px solid var(--primary) !important; /* Barra Laranja */
+        padding-left: 12px !important;
+        margin-bottom: 15px !important;
+        font-size: 1rem !important;
+        line-height: 1.2 !important;
+        display: block !important;
+    }
+
+    /* ConteÃºdo (Listas e EndereÃ§o) alinhado visualmente com o TÃ­tulo */
+    .footer-links ul, 
+    .footer-links p {
+        padding-left: 15px !important; /* Recuo para alinhar com o texto do tÃ­tulo */
+        list-style: none !important;
+        margin: 0 !important;
+    }
+
+    .footer-links li, 
+    .footer-links a,
+    .footer-links p {
+        font-size: 13px !important; /* Tamanho da fonte conforme imagem */
+        line-height: 1.6 !important;
+        color: rgba(255,255,255,0.85) !important;
+        white-space: normal !important; /* Permite quebrar linha se necessÃ¡rio */
+    }
+    
+    /* Remove padding extra do primeiro item que poderia desalinhar */
+    .footer-links:first-child {
+        padding-left: 0 !important;
+    }
+}
+
+
+
+/* === CENTRALIZAÃ‡ÃƒO DA MARCA E TEXTO (FOOTER MOBILE) === */
+@media (max-width: 768px) {
+    /* ForÃ§a centralizaÃ§Ã£o absoluta do bloco da marca */
+    .footer-brand {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important; /* Centraliza horizontalmente */
+        text-align: center !important; /* Centraliza texto interno */
+        margin: 0 auto 30px auto !important; /* Centraliza o bloco na tela e dÃ¡ margem inferior */
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Garante que o parÃ¡grafo 'A vitrine premium...' respeite a centralizaÃ§Ã£o */
+    .footer-brand p {
+        text-align: center !important;
+        margin: 10px auto !important; /* Margem auto ajuda a centralizar bloco de texto */
+        max-width: 90% !important; /* Evita colar nas bordas */
+        display: block !important;
+    }
+
+    /* Garante que o logo tambÃ©m fique no meio */
+    .footer-brand .logo, 
+    .footer-brand img {
+        margin: 0 auto !important;
+        display: block !important;
+    }
+}
+
+
+
+
+
+
+/* === CENTRALIZAÃ‡ÃƒO SUPREMA DA MARCA (FOOTER MOBILE) === */
+@media (max-width: 768px) {
+    /* Container da Marca (Logo + Texto) */
+    .footer-brand {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important; /* Eixo X: Centro */
+        justify-content: center !important;
+        text-align: center !important; /* Texto: Centro */
+        width: 100% !important;
+        margin: 0 auto 40px auto !important; /* Margem inferior generosa */
+        padding: 0 !important;
+        border-bottom: 1px solid rgba(255,255,255,0.05) !important; /* Linha divisÃ³ria sutil */
+        padding-bottom: 30px !important;
+    }
+
+    /* Imagem do Logo */
+    .footer-brand .logo, 
+    .footer-brand img {
+        margin: 0 auto 15px auto !important;
+        display: block !important;
+        max-width: 160px !important; /* Tamanho controlado */
+        height: auto !important;
+    }
+
+    /* Texto 'A vitrine premium...' */
+    .footer-brand p {
+        font-size: 0.9rem !important;
+        line-height: 1.5 !important;
+        color: rgba(255,255,255,0.7) !important;
+        text-align: center !important;
+        margin: 0 auto !important;
+        max-width: 300px !important; /* Bloco de texto compacto no meio */
+    }
+}
+
+
+
+/* === REVERSÃƒO PARA CENTRALIZAÃ‡ÃƒO COMPACTA === */
+/* Remove margens excessivas para manter rodapÃ© curto */
+@media (max-width: 768px) {
+    .footer-brand {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important; /* Centraliza horizontalmente */
+        justify-content: center !important;
+        text-align: center !important;
+        width: 100% !important;
+        margin: 0 0 20px 0 !important; /* Apenas 20px de espaÃ§o abaixo */
+        padding: 0 !important;
+        border: none !important; /* Remove bordas que ocupam espaÃ§o */
+    }
+
+    .footer-brand .logo,
+    .footer-brand img {
+        margin: 0 auto 8px auto !important; /* EspaÃ§o mÃ­nimo entre logo e texto */
+        display: block !important;
+        max-width: 150px !important;
+    }
+
+    .footer-brand p {
+        margin: 0 !important; /* Remove margem do parÃ¡grafo */
+        padding: 0 10px !important; /* Pequeno respiro lateral */
+        font-size: 0.85rem !important;
+        line-height: 1.3 !important; /* Linha mais compacta */
+        max-width: 100% !important;
+    }
+}
+
+
+
+/* === CORREÃ‡ÃƒO MINIATURAS GALERIA (VER FOTO TODA) === */
+.vehicle-mosaic-tile {
+    background: #000 !important; /* Fundo preto para caso a foto nÃ£o preencha tudo */
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.vehicle-mosaic-tile img {
+    object-fit: contain !important; /* GARANTE QUE A FOTO APAREÃ‡A INTEIRA, SEM CORTES */
+    width: 100% !important;
+    height: 100% !important;
+    background: #000;
+}
+
+
+
+/* === NOVO CARROSSEL HORIZONTAL (SUBSTITUI MOSAICO) === */
+.mosaic-carousel-container {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 5px 0 15px 0; /* Padding inferior para scroll nativo nÃ£o colar */
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+}
+
+/* Oculta scrollbar feia mas mantÃ©m funcionalidade */
+.mosaic-carousel-container::-webkit-scrollbar {
+    height: 6px;
+}
+.mosaic-carousel-container::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 3px;
+}
+
+.mosaic-carousel-item {
+    flex: 0 0 280px; /* Largura fixa boa para visualizar */
+    height: 210px; /* Aspect Ratio 4:3 (Retangular) */
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    scroll-snap-align: start;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: #111;
+}
+
+.mosaic-carousel-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Preenche o retÃ¢ngulo sem deformar */
+    transition: transform 0.3s;
+}
+
+.mosaic-carousel-item:hover img {
+    transform: scale(1.05); /* Zoom suave ao passar mouse */
+}
+
+/* Responsivo para telas muito pequenas */
+@media (max-width: 360px) {
+    .mosaic-carousel-item {
+        flex: 0 0 85%; /* Ocupa quase toda a tela */
+        height: 200px;
+    }
+}
+
+
+
+/* === CORREÃ‡ÃƒO CARROSSEL (VISUAL LIMPO E PREENCHIDO) === */
+.mosaic-carousel-container {
+    padding: 0 !important;
+    gap: 15px !important;
+}
+
+.mosaic-carousel-item {
+    flex: 0 0 260px !important; /* Largura fixa boa */
+    height: 195px !important; /* Retangular 4:3 */
+    background: transparent !important; /* Remove fundo preto/branco */
+    border: none !important; /* Remove bordas */
+    border-radius: 12px !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important; /* Sombra suave para destacar */
+}
+
+/* Garante que a imagem preencha TUDO bonito (Cover) */
+.mosaic-carousel-item img {
+    object-fit: cover !important; 
+    border-radius: 12px !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+
+
+/* === CORREÃ‡ÃƒO FINAL GALERIA & RODAPÃ‰ COMPACTO === */
+
+/* 1. Galeria Carrossel (Simplificada e Robusta) */
+.mosaic-carousel-container {
+    display: flex !important;
+    flex-wrap: nowrap !important; /* Garante linha Ãºnica */
+    gap: 10px !important;
+    overflow-x: auto !important;
+    padding: 10px 5px !important;
+    width: 100% !important;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+.mosaic-carousel-item {
+    flex: 0 0 auto !important;
+    width: 85% !important; /* Ocupa quase a tela toda no celular (boa visibilidade) */
+    max-width: 320px !important;
+    aspect-ratio: 4/3 !important; /* MantÃ©m proporÃ§Ã£o retangular */
+    height: auto !important; /* Altura automÃ¡tica baseada na largura */
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    background: #f0f0f0 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+}
+
+.mosaic-carousel-item img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important; /* Preenche sem distorcer */
+    display: block !important;
+}
+
+/* 2. RodapÃ© Ultra Compacto (Mobile) */
+@media (max-width: 768px) {
+    footer {
+        padding-top: 20px !important; /* Reduz padding superior geral */
+        padding-bottom: 20px !important;
+    }
+
+    .footer-main {
+        padding: 0 !important; /* Remove padding interno extra */
+    }
+
+    .footer-content {
+        padding: 0 !important;
+        gap: 20px !important; /* Reduz gap vertical entre blocos */
+        margin-bottom: 0 !important;
+    }
+
+    /* Marca/Logo Compacta */
+    .footer-brand {
+        margin-bottom: 15px !important; /* Menos espaÃ§o antes das colunas */
+        padding-bottom: 10px !important;
+        border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+    }
+    
+    .footer-brand .logo, 
+    .footer-brand img {
+        margin-bottom: 5px !important; /* Logo mais perto do texto */
+        max-width: 120px !important; /* Logo menor */
+    }
+    
+    .footer-brand p {
+        font-size: 0.8rem !important; /* Texto menor */
+        line-height: 1.2 !important;
+        max-width: 90% !important;
+    }
+
+    /* Colunas de Links Compactas */
+    .footer-links h4 {
+        margin-bottom: 8px !important; /* TÃ­tulo mais perto da lista */
+        font-size: 0.95rem !important;
+    }
+
+    .footer-links p, 
+    .footer-links li {
+        margin-bottom: 4px !important; /* Itens mais juntos */
+        font-size: 0.8rem !important;
+    }
+}
+
+
+
+/* === CORREÃ‡ÃƒO AGRESSIVA: GALERIA MINIATURAS & RODAPÃ‰ MINI === */
+
+/* 1. Galeria de Miniaturas (Visual real de lista horizontal) */
+.mosaic-carousel-container {
+    gap: 8px !important; /* EspaÃ§o pequeno entre fotos */
+    padding: 0 10px !important; /* Margem lateral */
+}
+
+.mosaic-carousel-item {
+    flex: 0 0 45% !important; /* Mostra 2 fotos e um pedaÃ§o (Miniaturas) */
+    max-width: 200px !important;
+    aspect-ratio: 4/3 !important;
+    height: auto !important;
+    border-radius: 8px !important; /* Canto menos arredondado */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+/* 2. RodapÃ© Micro (Mobile) */
+@media (max-width: 768px) {
+    footer {
+        padding: 15px 0 15px 0 !important; /* MÃ­nimo possÃ­vel */
+    }
+
+    .footer-content {
+        gap: 15px !important; /* Gap mÃ­nimo */
+    }
+
+    /* Marca Super Pequena */
+    .footer-brand {
+        margin-bottom: 10px !important;
+        padding-bottom: 8px !important;
+    }
+
+    .footer-brand .logo, 
+    .footer-brand img {
+        max-width: 100px !important; /* Logo BEM menor */
+        margin-bottom: 5px !important;
+    }
+
+    .footer-brand p {
+        font-size: 0.75rem !important; /* Texto minÃºsculo */
+        line-height: 1.2 !important;
+        display: none !important; /* Opcional: Se quiser esconder o texto da marca pra encurtar mais, avise. Por enquanto mantive, mas pequeno. */
+    }
+
+    /* Colunas Apertadas */
+    .footer-links h4 {
+        font-size: 0.85rem !important;
+        margin-bottom: 6px !important;
+        padding-left: 8px !important;
+    }
+
+    .footer-links p, 
+    .footer-links li,
+    .footer-links a {
+        font-size: 0.75rem !important; /* Fonte 12px */
+        line-height: 1.4 !important;
+        margin-bottom: 3px !important;
+        padding-left: 10px !important;
+    }
+    
+    /* Copyright minÃºsculo */
+    .footer-bottom {
+        padding: 10px 0 !important;
+        margin-top: 10px !important;
+    }
+    .footer-bottom p, 
+    .footer-bottom a {
+        font-size: 0.7rem !important; /* 11px */
+    }
+}
+
+
+
+/* === GALERIA SWIPE (1 FOTO POR VEZ) === */
+.mosaic-carousel-container {
+    scroll-snap-type: x mandatory !important;
+    padding: 0 0px !important; /* Sem padding lateral */
+    gap: 0 !important; /* Sem gap, foto cola na outra */
+}
+
+.mosaic-carousel-item {
+    flex: 0 0 100% !important; /* Ocupa 100% da largura */
+    width: 100% !important;
+    max-width: none !important;
+    aspect-ratio: 4/3 !important; /* Formato Retangular PadrÃ£o */
+    scroll-snap-align: center !important; /* Centraliza ao parar */
+    border-radius: 0 !important; /* Quadrado ou levemente arredondado? Vou deixar 0 pra parecer app full width */
+    margin: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Indicador visual de que tem mais fotos (opcional) */
+/* Adiciona padding no container pai se quiser ver pontinha */
+
+
+
+/* === RESTAURAÃ‡ÃƒO TEXTO DA MARCA (RODAPÃ‰) === */
+@media (max-width: 768px) {
+    .footer-brand p {
+        display: block !important; /* Restaura visibilidade */
+        font-size: 0.8rem !important; /* Fonte pequena mas legÃ­vel */
+        line-height: 1.3 !important;
+        margin-top: 5px !important;
+        color: rgba(255,255,255,0.7) !important;
+        max-width: 90% !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+}
+
+
+
+/* === CORREÃ‡ÃƒO ESPAÃ‡O BRANCO GALERIA (PREENCHIMENTO TOTAL) === */
+.mosaic-carousel-container {
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    display: flex !important;
+}
+
+.mosaic-carousel-item {
+    flex: 0 0 100% !important; /* OItem ocupa 100% da largura disponÃ­vel */
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    background: #000 !important; /* Fundo preto caso a imagem nÃ£o carregue ou ratio falhe */
+    border: none !important;
+    border-radius: 8px !important; /* Arredondado suave, igual os outros cards */
+}
+
+/* Garante que a imagem estique para preencher tudo */
+.mosaic-carousel-item img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important; /* Cobre todo o espaÃ§o, sem sobrar branco */
+    display: block !important;
+}
+
+/* === GALERIA: 2 IMAGENS POR SLIDE (AVANCA 2 EM 2) === */
+.vehicle-mosaic-wrap.is-carousel {
+    /* O estilo antigo da .vehicle-mosaic-wrap eh um grid 3 colunas (mosaico).
+       Para o carrossel, precisa ocupar o card inteiro. */
+    display: block !important;
+    grid-template-columns: none !important;
+    gap: 0 !important;
+    padding: 0 !important;
+}
+
+.vehicle-mosaic-wrap .mosaic-carousel-shell {
+    position: relative;
+    height: 100%;
+}
+
+.vehicle-mosaic-wrap .mosaic-carousel-container {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch;
+    gap: 0 !important; /* gap fica dentro do slide (grid) */
+    padding: 0 !important;
+    height: 100%;
+}
+
+.vehicle-mosaic-wrap .mosaic-slide {
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 10px;
+    scroll-snap-align: start;
+    height: 100%;
+}
+
+/* Quando sobrar 1 foto no ultimo slide, evita buraco: ela ocupa tudo */
+.vehicle-mosaic-wrap .mosaic-slide.single {
+    grid-template-columns: 1fr;
+}
+
+.vehicle-mosaic-wrap .mosaic-carousel-item {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: transparent !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    height: 100% !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10) !important;
+    cursor: pointer;
+}
+
+.vehicle-mosaic-wrap .mosaic-carousel-item img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+}
+
+.vehicle-mosaic-wrap .mosaic-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    border: 1px solid rgba(0,0,0,0.08);
+    background: rgba(255,255,255,0.92);
+    color: #111;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.14);
+    cursor: pointer;
+    z-index: 2;
+}
+
+.vehicle-mosaic-wrap .mosaic-nav svg {
+    width: 18px;
+    height: 18px;
+}
+
+.vehicle-mosaic-wrap .mosaic-nav.prev { left: 8px; }
+.vehicle-mosaic-wrap .mosaic-nav.next { right: 8px; }
+
+@media (max-width: 420px) {
+    .vehicle-mosaic-wrap .mosaic-slide { gap: 8px; }
+    .vehicle-mosaic-wrap .mosaic-nav { width: 34px; height: 34px; }
+}
+
+/* === FOOTER MOBILE: CENTRALIZAR LOGO + TEXTO (SEM MEXER EM ALTURAS/LAYOUT) === */
+@media (max-width: 768px) {
+    .footer-brand {
+        text-align: center !important;
+        align-items: center !important;
+    }
+
+    .footer-brand .logo,
+    .footer-brand img {
+        display: block !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
+    .footer-brand p {
+        text-align: center !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+}
+
+/* Mobile: logo do rodape (acima do texto) sempre no meio */
+@media (max-width: 480px) {
+    .footer .footer-brand {
+        text-align: center !important;
+    }
+
+    .footer .footer-logo,
+    .footer .footer-brand .logo {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 100% !important;
+    }
+
+    .footer .footer-logo img,
+    .footer .footer-brand img {
+        display: block !important;
+        margin: 0 auto !important;
+    }
+
+    /* Garante que a marca ocupe a largura toda no mobile */
+    .footer .footer-brand {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+}
+
+/* === FOOTER MOBILE FINAL (COMPACTO, BONITO, SEM SURPRESAS) === */
+@media (max-width: 768px) {
+    .footer .footer-main {
+        padding: 26px 0 16px !important;
+    }
+
+    /* Normaliza os dois layouts que existem (footer-grid vs footer-content) */
+    .footer .footer-grid,
+    .footer .footer-content {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 16px 12px !important;
+        width: 100% !important;
+        align-items: start !important;
+    }
+
+    .footer .footer-brand {
+        grid-column: 1 / -1 !important;
+        justify-self: stretch !important;
+        margin: 0 0 10px 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        text-align: center !important;
+        max-width: 100% !important;
+    }
+
+    .footer .footer-logo img,
+    .footer .footer-brand img {
+        max-width: 150px !important;
+        height: auto !important;
+    }
+
+    /* Texto curto e elegante, sem ocupar tela */
+    .footer .footer-brand p {
+        font-size: 0.82rem !important;
+        line-height: 1.35 !important;
+        max-width: 36ch !important;
+        margin: 8px auto 0 auto !important;
+        padding: 0 12px !important;
+        overflow: hidden !important;
+        display: -webkit-box !important;
+        -webkit-box-orient: vertical !important;
+        -webkit-line-clamp: 3 !important;
+    }
+
+    /* Social some no mobile para ficar bem compacto */
+    .footer .social-links {
+        display: none !important;
+    }
+
+    .footer .footer-links h4 {
+        font-size: 0.95rem !important;
+        margin: 0 0 8px 0 !important;
+    }
+
+    .footer .footer-links ul {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .footer .footer-links ul li {
+        margin: 0 0 6px 0 !important;
+    }
+
+    .footer .footer-links a,
+    .footer .footer-links p {
+        font-size: 0.8rem !important;
+        line-height: 1.35 !important;
+    }
+
+    /* Neutraliza inline styles enormes em paragrafos de contato */
+    .footer .footer-links p[style] {
+        margin-bottom: 8px !important;
+    }
+
+    .footer .footer-bottom {
+        padding: 14px 0 !important;
+    }
+
+    .footer .footer-bottom .container {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 10px !important;
+    }
+
+    .footer .footer-bottom p {
+        font-size: 0.8rem !important;
+        text-align: center !important;
+    }
+
+    .footer .footer-legal {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        gap: 12px !important;
+        margin-top: 0 !important;
+    }
+
+    .footer .footer-legal a {
+        font-size: 0.8rem !important;
+    }
+}
+
+/* Mobile: garantia absoluta de logo do rodape no centro */
+@media (max-width: 480px) {
+    .footer .footer-brand .footer-logo {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        justify-self: center !important;
+    }
+
+    .footer .footer-brand .footer-logo img {
+        display: block !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        max-width: min(180px, 70vw) !important;
+    }
+
+    /* Evita qualquer "empurrÃ£o" lateral no bloco da marca */
+    .footer .footer-brand {
+        margin-left: auto !important;
+        margin-right: auto !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        justify-self: center !important;
+    }
+
+    /* Remove regra antiga que deslocava o rodape para abrir espaco do WhatsApp */
+    .footer-bottom .container {
+        padding-right: 0 !important;
+    }
+}
+
+/* === XEQUE-MATE MOBILE: LOGO + TEXTO CENTRALIZADOS (FULL WIDTH) === */
+@media (max-width: 480px) {
+    /* Quebra qualquer container "centrado" que esteja criando coluna fantasma */
+    .footer .footer-main .container {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    /* Marca em coluna unica, 100% viewport, sem empurrao lateral */
+    .footer .footer-brand {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+        padding: 0 16px !important; /* respiro interno sem deslocar o bloco */
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+    }
+
+    .footer .footer-brand .footer-logo {
+        width: 100% !important;
+        max-width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        text-align: center !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .footer .footer-brand .footer-logo img {
+        display: block !important;
+        margin: 0 !important;
+    }
+
+    .footer .footer-brand p {
+        width: 100% !important;
+        max-width: 40ch !important;
+        margin: 10px 0 0 0 !important;
+        padding: 0 !important;
+        text-align: center !important;
+    }
+}
+
+/* === CABECALHO INFERIOR (RODAPE) - TRAVA CENTRALIZACAO NO MOBILE === */
+/* Regra final para evitar qualquer "coluna fantasma" e centralizar logo + texto. */
+@media (max-width: 480px) {
+    footer.footer .footer-main .container {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 auto !important;
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+        box-sizing: border-box;
+    }
+
+    footer.footer .footer-grid,
+    footer.footer .footer-content {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box;
+    }
+
+    footer.footer .footer-brand {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        grid-column: 1 / -1 !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: flex-start !important;
+        justify-content: center !important;
+        text-align: left !important;
+        gap: 12px !important;
+    }
+
+    footer.footer .footer-brand .footer-logo {
+        flex: 0 0 auto !important;
+        display: flex !important;
+        justify-content: flex-start !important;
+        align-items: flex-start !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    footer.footer .footer-brand .logo-img,
+    footer.footer .footer-brand img {
+        display: block !important;
+        margin: 0 !important;
+        max-width: 140px !important;
+        height: auto !important;
+    }
+
+    footer.footer .footer-brand p {
+        flex: 1 1 auto !important;
+        width: auto !important;
+        margin: 2px 0 0 0 !important;
+        padding: 0 !important;
+        text-align: left !important;
+        max-width: none !important;
+        font-size: 0.82rem !important;
+        line-height: 1.35 !important;
+        overflow: hidden !important;
+        display: -webkit-box !important;
+        -webkit-box-orient: vertical !important;
+        -webkit-line-clamp: 4 !important;
+    }
+}
+
+/* Mobile: endereco 1 por linha (sem quebrar "Rio Claro/SP") */
+@media (max-width: 480px) {
+    .footer .footer-address-line,
+    .footer .footer-city {
+        display: block;
+    }
+
+    .footer .footer-city {
+        white-space: nowrap;
+    }
+}
+
+.vehicle-mosaic-wrap.is-carousel {
+    display: block !important;
+}
+
+.vehicle-mosaic-wrap .mosaic-carousel-shell {
+    position: relative;
+    height: 100%;
+}
+
+.vehicle-mosaic-wrap .mosaic-carousel-container {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch;
+    gap: 0 !important;
+    padding: 0 !important;
+    height: 100%;
+}
+
+.vehicle-mosaic-wrap .mosaic-slide {
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 10px;
+    scroll-snap-align: start;
+    height: 100%;
+}
+
+.vehicle-mosaic-wrap .mosaic-slide.single {
+    grid-template-columns: 1fr;
+}
+
+.vehicle-mosaic-wrap .mosaic-carousel-item {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: transparent !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    height: 100% !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10) !important;
+    cursor: pointer;
+}
+
+.vehicle-mosaic-wrap .mosaic-carousel-item img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+}
+
+.vehicle-mosaic-wrap .mosaic-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    border: 1px solid rgba(0,0,0,0.08);
+    background: rgba(255,255,255,0.92);
+    color: #111;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.14);
+    cursor: pointer;
+    z-index: 2;
+}
+
+.vehicle-mosaic-wrap .mosaic-nav svg {
+    width: 18px;
+    height: 18px;
+}
+
+.vehicle-mosaic-wrap .mosaic-nav.prev { left: 8px; }
+.vehicle-mosaic-wrap .mosaic-nav.next { right: 8px; }
+
+@media (max-width: 420px) {
+    .vehicle-mosaic-wrap .mosaic-slide { gap: 8px; }
+    .vehicle-mosaic-wrap .mosaic-nav { width: 34px; height: 34px; }
 }

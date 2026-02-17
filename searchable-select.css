@@ -1,0 +1,76 @@
+/* ====== SELECT COM BUSCA E EDIÃ‡ÃƒO MANUAL ====== */
+
+.searchable-select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.searchable-select-input {
+    width: 100%;
+    padding: 10px 35px 10px 12px;
+    border: 1px solid #E0E0E0;
+    border-radius: 4px;
+    background: #fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8"><path fill="%23666" d="M1 1l5 5 5-5"/></svg>') no-repeat right 12px center;
+    color: #333;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    box-sizing: border-box;
+    cursor: text;
+    /* Cursor de texto para indicar ediÃ§Ã£o */
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.searchable-select-input:focus {
+    border-color: #FF9500;
+    box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.16);
+    outline: none;
+}
+
+.searchable-select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 250px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #E0E0E0;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    display: none;
+    margin-top: -1px;
+}
+
+.searchable-select-dropdown.active {
+    display: block;
+}
+
+.searchable-select-option {
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: background .15s ease;
+    font-size: 14px;
+    color: #333;
+}
+
+.searchable-select-option:hover,
+.searchable-select-option.highlighted {
+    background: rgba(255, 149, 0, 0.12);
+}
+
+.searchable-select-manual-option {
+    padding: 10px 12px;
+    background: #f0f9ff;
+    border-top: 1px solid #e0e0e0;
+    color: #0369a1;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.searchable-select-manual-option:hover {
+    background: #e0f2fe;
+}

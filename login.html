@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260216-3">
     <style>
         body {
             background: var(--bg-secondary);
@@ -128,7 +128,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Integração Supabase para Rastreamento (Silent)
+        // IntegraÃ§Ã£o Supabase para Rastreamento (Silent)
         const SUPA_URL = 'https://ltymsdjeylwhgqtlsyaj.supabase.co';
         const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0eW1zZGpleWx3aGdxdGxzeWFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MTU4MDQsImV4cCI6MjA4NTk5MTgwNH0.L_7Vyv3ZqC-pSBwVVt0sKD8EtBtCsb4o_zyX0RiMWXQ';
 
@@ -150,7 +150,7 @@
             }
         }
 
-        // Função Central de Redirecionamento
+        // FunÃ§Ã£o Central de Redirecionamento
         async function loginReady(u, r) {
             console.log("Login validado para:", u, "| Cargo:", r);
 
@@ -186,15 +186,15 @@
                 }
             } catch (err) {
                 console.log("Erro ao verificar Supabase:", err);
-                // Ignorar erro de "não encontrou usuário" (Row not found)
+                // Ignorar erro de "nÃ£o encontrou usuÃ¡rio" (Row not found)
                 if (err.code !== 'PGRST116' && !err.message.includes('JSON object requested')) {
-                    alert("Erro técnico no login: " + (err.message || JSON.stringify(err)));
+                    alert("Erro tÃ©cnico no login: " + (err.message || JSON.stringify(err)));
                 }
             }
             return null;
         }
 
-        // Escutador do Formulário
+        // Escutador do FormulÃ¡rio
         document.getElementById('loginForm').onsubmit = async function (e) {
             e.preventDefault();
 
@@ -241,12 +241,22 @@
             // 3. FALHA
             btn.innerText = "ENTRAR NO PAINEL";
             btn.disabled = false;
-            error.innerText = "Usuário ou senha incorretos.";
+            error.innerText = "UsuÃ¡rio ou senha incorretos.";
             error.style.display = 'block';
-            console.log("Falha no login: Credenciais inválidas.");
+            console.log("Falha no login: Credenciais invÃ¡lidas.");
             return false;
         };
     </script>
 </body>
 
 </html>
+
+
+
+
+
+
+
+
+
+

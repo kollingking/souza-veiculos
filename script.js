@@ -1,72 +1,89 @@
 // ===== Data Management (LocalStorage + Default) =====
-const defaultCars = [];
+const defaultCars = [
+    {
+        id: 1,
+        title: "Chevrolet Onix Premier",
+        brand: "GM - Chevrolet",
+        model: "Onix",
+        version: "Premier",
+        year: 2022,
+        km: 24000,
+        price: 89990,
+        fuel: "Flex",
+        engine: "1.0 Turbo",
+        transmission: "Automática",
+        power: "116 cv",
+        color: "Branco",
+        condition: "seminovo",
+        type: "carros",
+        options: ["Ar-condicionado", "Direção elétrica", "Câmbio automático", "Central multimídia", "Airbags", "Freios ABS"],
+        images: ["logo.png"],
+        createdAt: "2024-01-10T00:00:00.000Z"
+    },
+    {
+        id: 2,
+        title: "Jeep Renegade Longitude",
+        brand: "Jeep",
+        model: "Renegade",
+        version: "Longitude",
+        year: 2021,
+        km: 38000,
+        price: 119900,
+        fuel: "Flex",
+        engine: "1.3 Turbo",
+        transmission: "Automática",
+        power: "185 cv",
+        color: "Preto",
+        condition: "seminovo",
+        type: "carros",
+        options: ["Ar digital", "Piloto automático", "Bancos em couro", "Câmera de ré", "Controle de estabilidade"],
+        images: ["logo.png"],
+        createdAt: "2023-11-05T00:00:00.000Z"
+    },
+    {
+        id: 3,
+        title: "Honda Civic Touring",
+        brand: "Honda",
+        model: "Civic",
+        version: "Touring",
+        year: 2019,
+        km: 52000,
+        price: 129900,
+        fuel: "Gasolina",
+        engine: "1.5 Turbo",
+        transmission: "CVT",
+        power: "173 cv",
+        color: "Cinza",
+        condition: "seminovo",
+        type: "carros",
+        options: ["Teto solar", "Bancos em couro", "Sensor de ponto cego", "Ar digital dual-zone"],
+        images: ["logo.png"],
+        createdAt: "2023-07-20T00:00:00.000Z"
+    }
+];
 const SITE_OFFICIAL_ADDRESS = 'Av. M15, n. 784 - Rio Claro/SP - CEP 13505-320';
 const SITE_OFFICIAL_PHONE = '5519999313717';
 
-/**
- * 🇧🇷 Normalizador Universal de Telefone Brasileiro
- * Aceita múltiplos formatos de entrada e converte para padrão WhatsApp
- * 
- * Formatos aceitos:
- * - 19978259364 (11 dígitos: DDD + número)
- * - 019978259364 (12 dígitos: zero + DDD + número)
- * - 5519978259364 (13 dígitos: código país + DDD + número)
- * - +55 19 97825-9364 (formatado com espaços e hífen)
- * - (19) 97825-9364 (formato visual com parênteses)
- * 
- * Saída: sempre 13 dígitos sem formatação (ex: 5519978259364)
- */
 function normalizePhoneForWhatsApp(rawInput, fallback = SITE_OFFICIAL_PHONE) {
-    // Remove TODOS os caracteres não numéricos (espaços, hífen, parênteses, +)
     const digits = (rawInput || '').toString().replace(/\D/g, '');
 
     // Se vazio, retorna fallback
     if (!digits) return fallback;
 
-    // Caso 1: Já tem 13 dígitos e começa com 55 (padrão completo)
-    // Ex: 5519978259364
-    if (digits.length === 13 && digits.startsWith('55')) {
-        return digits;
+    // Se já começa com 55, retorna como está
+    if (digits.startsWith('55')) {
+        // Garante que tem pelo menos 12 dígitos (55 + DDD + número de 8 ou 9)
+        if (digits.length >= 12) return digits;
     }
 
-    // Caso 2: Tem 12 dígitos e começa com 0 (formato antigo com zero)
-    // Ex: 019978259364 → remove o 0 e adiciona 55
-    if (digits.length === 12 && digits.startsWith('0')) {
-        const cleaned = digits.substring(1); // Remove o 0
-        return `55${cleaned}`; // Retorna: 5519978259364
+    // Se começa com 0, remove o zero inicial (formato antigo)
+    if (digits.startsWith('0')) {
+        const cleaned = digits.substring(1);
+        return `55${cleaned}`;
     }
 
-    // Caso 3: Tem 11 dígitos (apenas DDD + número, SEM código do país)
-    // Ex: 19978259364 → adiciona o 55
-    if (digits.length === 11) {
-        return `55${digits}`; // Retorna: 5519978259364
-    }
-
-    // Caso 4: Tem 10 dígitos (números antigos sem o 9 extra)
-    // Ex: 1998383275 → adiciona 55
-    if (digits.length === 10) {
-        return `55${digits}`; // Retorna: 551998383275
-    }
-
-    // Caso 5: Mais de 13 dígitos (remover caracteres extras do início)
-    // Ex: +5519978259364 (14 dígitos por conta do +) → já foi limpo, pega os últimos 13
-    if (digits.length > 13) {
-        // Se começa com 55, pega os primeiros 13
-        if (digits.startsWith('55')) {
-            return digits.substring(0, 13);
-        }
-        // Senão, pega os últimos 11 e adiciona 55
-        const last11 = digits.slice(-11);
-        return `55${last11}`;
-    }
-
-    // Fallback: Se não se encaixar em nenhum caso, tenta adicionar 55
-    // e retorna ou o fallback se inválido
-    if (digits.length >= 10) {
-        return `55${digits}`;
-    }
-
-    return fallback;
+    // Para qualquer outro caso, adiciona 55 no início
+    return `55${digits}`;
 }
 
 function normalizeStoreAddressInput(value) {
@@ -106,44 +123,19 @@ function enforceOfficialPhoneInStorage() {
     }
 }
 
-/**
- * 📱 Formatador de Telefone para Exibição Visual
- * Converte número normalizado para formato brasileiro legível
- * Entrada: 5519978259364 (13 dígitos) ou 19978259364 (11 dígitos)
- * Saída: (19) 97825-9364
- */
 function formatPhoneDisplay(phoneDigits) {
     const digits = (phoneDigits || '').replace(/\D/g, '');
     if (!digits) return '';
-
-    // Caso 1: 13 dígitos começando com 55 (formato completo do WhatsApp)
-    // Ex: 5519978259364 → (19) 97825-9364
+    // Visual: sem o +55; armazenado continua com 55 para links.
     if (digits.length === 13 && digits.startsWith('55')) {
-        const ddd = digits.slice(2, 4);      // Pega o DDD (19)
-        const part1 = digits.slice(4, 9);     // Primeiros 5 dígitos (97825)
-        const part2 = digits.slice(9);        // Últimos 4 dígitos (9364)
-        return `(${ddd}) ${part1}-${part2}`;
+        return `(${digits.slice(2, 4)}) ${digits.slice(4, 9)}-${digits.slice(9)}`;
     }
-
-    // Caso 2: 11 dígitos (DDD + número sem código do país)
-    // Ex: 19978259364 → (19) 97825-9364
     if (digits.length === 11) {
-        const ddd = digits.slice(0, 2);       // Pega o DDD (19)
-        const part1 = digits.slice(2, 7);     // Primeiros 5 dígitos (97825)
-        const part2 = digits.slice(7);        // Últimos 4 dígitos (9364)
-        return `(${ddd}) ${part1}-${part2}`;
+        return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
     }
-
-    // Caso 3: 10 dígitos (números antigos sem o 9)
-    // Ex: 1998383275 → (19) 9838-3275
     if (digits.length === 10) {
-        const ddd = digits.slice(0, 2);
-        const part1 = digits.slice(2, 6);
-        const part2 = digits.slice(6);
-        return `(${ddd}) ${part1}-${part2}`;
+        return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
     }
-
-    // Fallback: retorna o que vier
     return digits;
 }
 
@@ -269,6 +261,220 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const CARS_CACHE_KEY = 'souza_cars_cache_v1';
 const CARS_CACHE_TTL_MS = 2 * 60 * 1000;
 
+// ===== Global Integrations (Pixel/GA) =====
+const INTEGRATIONS_LOCAL_KEY = 'souza_integrations_local_v1';
+
+function normalizeIntegrationConfig(raw) {
+    const cfg = raw && typeof raw === 'object' ? raw : {};
+    const pixel = cfg.pixel && typeof cfg.pixel === 'object' ? cfg.pixel : {};
+    const ga = cfg.ga && typeof cfg.ga === 'object' ? cfg.ga : {};
+    return {
+        pixel: {
+            enabled: !!pixel.enabled,
+            id: String(pixel.id || '').trim()
+        },
+        ga: {
+            enabled: !!ga.enabled,
+            id: String(ga.id || '').trim()
+        }
+    };
+}
+
+function mapRemoteIntegrationsRow(row) {
+    if (!row || typeof row !== 'object') return null;
+    return normalizeIntegrationConfig({
+        pixel: { enabled: !!row.pixel_enabled, id: row.pixel_id || '' },
+        ga: { enabled: !!row.ga_enabled, id: row.ga_id || '' }
+    });
+}
+
+function getIntegrationConfig() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(INTEGRATIONS_LOCAL_KEY) || '{}');
+        return normalizeIntegrationConfig(parsed);
+    } catch (e) {
+        return normalizeIntegrationConfig({});
+    }
+}
+
+function saveIntegrationConfig(cfg) {
+    const normalized = normalizeIntegrationConfig(cfg);
+    try {
+        localStorage.setItem(INTEGRATIONS_LOCAL_KEY, JSON.stringify(normalized));
+    } catch (e) { /* ignore quota errors */ }
+    return normalized;
+}
+
+function setLocalPixelId(id) {
+    const cfg = getIntegrationConfig();
+    cfg.pixel = { enabled: !!id, id: String(id || '').trim() };
+    saveIntegrationConfig(cfg);
+}
+
+async function fetchSouzaIntegrationsRemote() {
+    try {
+        const url = `${SUPABASE_URL}/rest/v1/site_integrations?id=eq.1&select=pixel_enabled,pixel_id,ga_enabled,ga_id,updated_at`;
+        const res = await fetch(url, {
+            headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+        });
+        if (!res.ok) {
+            console.warn('[Integrations] REST status', res.status);
+            return null;
+        }
+        const row = await res.json();
+        return Array.isArray(row) ? row[0] : row;
+    } catch (e) {
+        console.warn('[Integrations] fetch remote failed', e);
+        return null;
+    }
+}
+
+async function saveSouzaIntegrationsRemote(cfg) {
+    const normalized = normalizeIntegrationConfig(cfg);
+    const payload = {
+        id: 1,
+        pixel_enabled: !!normalized.pixel.id,
+        pixel_id: String(normalized.pixel.id || '').trim(),
+        ga_enabled: !!normalized.ga.id,
+        ga_id: String(normalized.ga.id || '').trim(),
+        updated_at: new Date().toISOString()
+    };
+
+    const url = `${SUPABASE_URL}/rest/v1/site_integrations`;
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            Prefer: 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(`supabase-upsert-failed: ${res.status} ${txt}`);
+    }
+    return normalized;
+}
+
+function getPublicIntegrationDefaults() {
+    const cfg = (window.SOUZA_CONFIG || {});
+    return normalizeIntegrationConfig({
+        pixel: {
+            enabled: !!(cfg.metaPixelId && cfg.metaPixelId.trim()),
+            id: (cfg.metaPixelId || '').trim()
+        },
+        ga: {
+            enabled: !!(cfg.gaMeasurementId && cfg.gaMeasurementId.trim()),
+            id: (cfg.gaMeasurementId || '').trim()
+        }
+    });
+}
+
+async function resolvePixelId() {
+    try {
+        const row = await fetchSouzaIntegrationsRemote();
+        const remoteId = row && row.pixel_id ? String(row.pixel_id).trim() : '';
+        if (remoteId) return remoteId;
+    } catch (e) {
+        console.warn('[Integrations] resolvePixelId remote failed', e);
+    }
+    const cfg = getPublicIntegrationDefaults();
+    return cfg.pixel.id || '';
+}
+
+function ensureMetaPixelLoaded(id) {
+    const pixelId = (id || '').trim();
+    if (!pixelId) return;
+    window.__souzaPixelLoaded = window.__souzaPixelLoaded || {};
+    if (window.__souzaPixelLoaded[pixelId]) return;
+    window.__souzaPixelLoaded[pixelId] = true;
+
+    if (window.fbq) {
+        window.fbq('init', pixelId);
+        window.fbq('track', 'PageView');
+    } else {
+        (function (f, b, e, v, n, t, s) {
+            if (f.fbq) return;
+            n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
+            if (!f._fbq) f._fbq = n;
+            n.push = n;
+            n.loaded = true;
+            n.version = '2.0';
+            n.queue = [];
+            t = b.createElement(e);
+            t.async = true;
+            t.src = v;
+            s = b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t, s);
+        })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+        window.fbq('init', pixelId);
+        window.fbq('track', 'PageView');
+    }
+    console.log('[Integrations] Pixel fired', pixelId);
+}
+
+function loadGoogleAnalytics(measurementId) {
+    const id = (measurementId || '').trim();
+    if (!id) return;
+
+    window.__souzaGaLoaded = window.__souzaGaLoaded || {};
+    if (window.__souzaGaLoaded[id]) {
+        window.gtag && window.gtag('config', id);
+        return;
+    }
+    window.__souzaGaLoaded[id] = true;
+
+    const gaScript = document.createElement('script');
+    gaScript.async = true;
+    gaScript.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
+    document.head.appendChild(gaScript);
+
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { window.dataLayer.push(arguments); }
+    window.gtag = gtag;
+    gtag('js', new Date());
+    gtag('config', id);
+}
+
+async function getEffectiveIntegrationConfig() {
+    const defaults = getPublicIntegrationDefaults();
+    const remoteRaw = await fetchSouzaIntegrationsRemote();
+    const remoteCfg = mapRemoteIntegrationsRow(remoteRaw) || normalizeIntegrationConfig({});
+
+    const pickPixel = remoteCfg.pixel.id ? remoteCfg.pixel : defaults.pixel;
+    const pickGa = remoteCfg.ga.id ? remoteCfg.ga : defaults.ga;
+
+    return {
+        pixel: { enabled: !!pickPixel.id, id: pickPixel.id },
+        ga: { enabled: !!pickGa.id, id: pickGa.id }
+    };
+}
+
+async function initAnalyticsIntegrations() {
+    try {
+        const cfg = await getEffectiveIntegrationConfig();
+        console.log('[Integrations] Effective config', cfg);
+        if (cfg.pixel.enabled && cfg.pixel.id) {
+            ensureMetaPixelLoaded(cfg.pixel.id);
+            console.log('[Integrations] Meta Pixel loaded', cfg.pixel.id);
+        }
+        if (cfg.ga.enabled && cfg.ga.id) {
+            loadGoogleAnalytics(cfg.ga.id);
+            console.log('[Integrations] GA loaded', cfg.ga.id);
+        }
+    } catch (err) {
+        console.error('Analytics init failed:', err);
+    }
+}
+
+// Bootstrap pixel as early as possible for every page
+(async function bootstrapPixelUniversal() {
+    const id = await resolvePixelId();
+    if (id) ensureMetaPixelLoaded(id);
+})();
+
 let supabaseClient = null;
 try {
     if (SUPABASE_URL && SUPABASE_KEY && window.supabase) {
@@ -305,7 +511,12 @@ const DB = {
                 });
                 const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
                 if (!error && data) {
-                    onlineCars = data.map(c => ({ ...c, createdAt: c.created_at || c.createdAt }));
+                    onlineCars = data.map(c => {
+                        const mapped = { ...c, createdAt: c.created_at || c.createdAt };
+                        // Backward/forward compatibility with different column naming.
+                        if (!mapped.videoUrl) mapped.videoUrl = mapped.video_url || mapped.video || '';
+                        return mapped;
+                    });
                     // Clean local storage if online is healthy to prevent "zombie" cars
                     if (onlineCars.length > 0) {
                         const sanitizedLocal = onlineCars.map(c => ({ ...c, images: (c.images || []).slice(0, 1) })); // Keep only 1 thumb locally
@@ -330,6 +541,23 @@ const DB = {
 
         // 4. Transform and Format
         const normalizedData = finalData.map(car => {
+            // Repair any mojibake coming from DB/local cache before using values in the UI.
+            const fixField = (v) => fixMojibakeText(String(v || ''));
+            car.title = fixField(car.title);
+            car.brand = fixField(car.brand);
+            car.model = fixField(car.model);
+            car.year = fixField(car.year);
+            car.km = fixField(car.km);
+            car.fuel = fixField(car.fuel);
+            car.engine = fixField(car.engine);
+            car.transmission = fixField(car.transmission);
+            car.power = fixField(car.power);
+            car.color = fixField(car.color);
+            car.description = fixField(car.description);
+            car.condition = fixField(car.condition);
+            car.badge = fixField(car.badge);
+            car.videoUrl = fixField(car.videoUrl || car.video_url || car.video);
+
             car.brand = normalizeBrand(car.brand);
             const localVideo = getVehicleVideoUrlById(car.id);
             if (localVideo && !car.videoUrl) {
@@ -1639,6 +1867,165 @@ function getOldestStockVehicle(cars) {
         .sort((a, b) => a.date.getTime() - b.date.getTime())[0] || null;
 }
 
+// ===== Admin Dashboard Helpers =====
+const adminCharts = { priceRange: null, topBrands: null };
+
+function destroyChart(refKey) {
+    const ref = adminCharts[refKey];
+    if (ref && typeof ref.destroy === 'function') {
+        ref.destroy();
+        adminCharts[refKey] = null;
+    }
+}
+
+function getPriceRangesSummary(cars) {
+    const buckets = [
+        { label: 'Até 70 mil', min: 0, max: 70000, count: 0 },
+        { label: '70 a 120 mil', min: 70000, max: 120000, count: 0 },
+        { label: 'Acima de 120 mil', min: 120000, max: Infinity, count: 0 }
+    ];
+
+    (cars || []).forEach((car) => {
+        const price = parsePriceFromCar(car);
+        if (!price || price <= 0) return;
+        if (price < 70000) buckets[0].count += 1;
+        else if (price <= 120000) buckets[1].count += 1;
+        else buckets[2].count += 1;
+    });
+
+    return buckets;
+}
+
+function getBrandHistogram(cars, limit = 8) {
+    const map = {};
+    (cars || []).forEach((car) => {
+        const brand = normalizeBrand(car.brand || '').trim();
+        if (!brand) return;
+        map[brand] = (map[brand] || 0) + 1;
+    });
+
+    const sorted = Object.entries(map)
+        .map(([brand, count]) => ({ brand, count }))
+        .sort((a, b) => b.count - a.count);
+
+    return {
+        totalBrands: Object.keys(map).length,
+        top: sorted.slice(0, limit)
+    };
+}
+
+function renderPriceRangeChart(buckets) {
+    const canvas = document.getElementById('chartPriceRanges');
+    const caption = document.getElementById('captionPriceRangeValues');
+    if (!canvas) return;
+
+    destroyChart('priceRange');
+
+    const isDark = document.body.classList.contains('dark-mode');
+    const bodyStyles = window.getComputedStyle ? getComputedStyle(document.body) : null;
+    const axisColor = (bodyStyles ? bodyStyles.getPropertyValue('--text-primary') : '').trim() ||
+        (isDark ? 'rgba(255,255,255,0.82)' : 'rgba(0,0,0,0.72)');
+    const gridColor = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)';
+    const labels = buckets.map(b => b.label);
+    const values = buckets.map(b => b.count);
+
+    if (caption) {
+        caption.innerHTML = buckets.map(item => `<span>${item.label}: <strong>${item.count}</strong></span>`).join(' | ');
+    }
+
+    if (typeof Chart === 'undefined') return;
+
+    adminCharts.priceRange = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Veículos',
+                data: values,
+                backgroundColor: 'rgba(255,122,26,0.35)',
+                borderColor: '#FF7A1A',
+                borderWidth: 1,
+                borderRadius: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                // sem números sobre as barras (como no backup)
+                datalabels: { display: false }
+            },
+            scales: {
+                x: { ticks: { color: axisColor }, grid: { color: gridColor } },
+                y: { beginAtZero: true, ticks: { color: axisColor, precision: 0 }, grid: { color: gridColor } }
+            }
+        },
+        plugins: typeof ChartDataLabels !== 'undefined' ? [ChartDataLabels] : []
+    });
+}
+
+function renderTopBrandsChart(topBrands, meta = {}) {
+    const canvas = document.getElementById('chartTopBrands');
+    const caption = document.getElementById('captionTopBrandsValues');
+    if (!canvas) return;
+
+    destroyChart('topBrands');
+
+    const isDark = document.body.classList.contains('dark-mode');
+    const bodyStyles = window.getComputedStyle ? getComputedStyle(document.body) : null;
+    const axisColor = (bodyStyles ? bodyStyles.getPropertyValue('--text-primary') : '').trim() ||
+        (isDark ? 'rgba(255,255,255,0.82)' : 'rgba(0,0,0,0.72)');
+    const gridColor = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)';
+
+    if (caption) {
+        const totalCars = meta.totalCars || '';
+        const brandsTotal = meta.brandsTotal || '';
+        const best = topBrands && topBrands[0] ? `${topBrands[0].brand} (${topBrands[0].count})` : '-';
+        caption.innerHTML = topBrands.length
+            ? `Total: ${totalCars || topBrands.reduce((a, b) => a + (b.count || 0), 0)} | Marcas: ${brandsTotal || topBrands.length} | Top 1: ${best}`
+            : '<span>Sem marcas suficientes para exibir.</span>';
+    }
+
+    if (!topBrands.length || typeof Chart === 'undefined') return;
+
+    adminCharts.topBrands = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: topBrands.map(b => b.brand),
+            datasets: [{
+                label: 'Veículos',
+                data: topBrands.map(b => b.count),
+                backgroundColor: 'rgba(46, 204, 113, 0.28)',
+                borderColor: 'rgba(46, 204, 113, 0.85)',
+                borderWidth: 1,
+                borderRadius: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    anchor: 'end',
+                    align: 'right',
+                    offset: 4,
+                    formatter: (v) => (Number(v || 0) > 0 ? String(v) : ''),
+                    color: axisColor,
+                    font: { weight: '600', size: 12 }
+                }
+            },
+            scales: {
+                x: { beginAtZero: true, ticks: { color: axisColor, precision: 0 }, grid: { color: gridColor } },
+                y: { ticks: { color: axisColor }, grid: { display: false } }
+            }
+        },
+        plugins: typeof ChartDataLabels !== 'undefined' ? [ChartDataLabels] : []
+    });
+}
+
 window.renderAdminDashboard = () => {
     const wrapper = document.getElementById('dashboardTopVehicles');
     if (!wrapper) return;
@@ -1648,12 +2035,21 @@ window.renderAdminDashboard = () => {
     const stockCountEl = document.getElementById('dashStockCount');
     const topVehicleEl = document.getElementById('dashTopVehicle');
     const insightsEl = document.getElementById('dashboardStockInsights');
+    const brandCountEl = document.getElementById('dashBrandCount');
+    const avgPriceEl = document.getElementById('dashAvgPrice');
+    const priceSpanEl = document.getElementById('dashPriceSpan');
 
     const analytics = readAnalytics();
     const today = getTodayKey();
     const cars = Array.isArray(carsData) ? carsData : [];
     const ranking = getVehicleViewsRanking(cars, 5);
     const oldest = getOldestStockVehicle(cars);
+    const priceRanges = getPriceRangesSummary(cars);
+    const brandHist = getBrandHistogram(cars, 8);
+    const prices = cars.map(parsePriceFromCar).filter(p => p > 0);
+    const minPrice = prices.length ? Math.min(...prices) : 0;
+    const maxPrice = prices.length ? Math.max(...prices) : 0;
+    const avgPrice = prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
 
     if (totalAccessEl) totalAccessEl.textContent = formatInteger(analytics.totalAccess || 0);
     if (todayAccessEl) todayAccessEl.textContent = formatInteger((analytics.dailyAccess || {})[today] || 0);
@@ -1661,6 +2057,9 @@ window.renderAdminDashboard = () => {
     if (topVehicleEl) {
         topVehicleEl.textContent = ranking.length ? capitalizeText(ranking[0].car.title || '-') : '-';
     }
+    if (brandCountEl) brandCountEl.textContent = formatInteger(brandHist.totalBrands || 0);
+    if (avgPriceEl) avgPriceEl.textContent = formatPrice(avgPrice || 0);
+    if (priceSpanEl) priceSpanEl.textContent = `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`;
 
     if (!ranking.length) {
         wrapper.innerHTML = '<div class="help-text">Ainda não há dados de acessos em veículos nesta navegação.</div>';
@@ -1686,6 +2085,9 @@ window.renderAdminDashboard = () => {
         insights.push('<div class="help-text">Sem dados suficientes para gerar insights.</div>');
     }
     if (insightsEl) insightsEl.innerHTML = insights.join('');
+
+    renderPriceRangeChart(priceRanges);
+    renderTopBrandsChart(brandHist.top || [], { totalCars: cars.length, brandsTotal: brandHist.totalBrands });
 };
 
 function initAdmin() {
@@ -2799,16 +3201,290 @@ function initAdmin() {
     if (sellerSearchInput) sellerSearchInput.addEventListener('input', () => window.renderSellers(false));
     if (sellerSortSelect) sellerSortSelect.addEventListener('change', () => window.renderSellers(false));
 
-    function getIntegrationConfig() {
+    // Pixel loader (idempotente)
+    function ensureMetaPixelLoaded(id) {
+        const pixelId = (id || '').trim();
+        if (!pixelId) return;
+        window.__souzaPixelLoaded = window.__souzaPixelLoaded || {};
+        if (window.__souzaPixelLoaded[pixelId]) return;
+        window.__souzaPixelLoaded[pixelId] = true;
+
+        if (window.fbq) {
+            window.fbq('init', pixelId);
+            window.fbq('track', 'PageView');
+        } else {
+            (function (f, b, e, v, n, t, s) {
+                if (f.fbq) return;
+                n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
+                if (!f._fbq) f._fbq = n;
+                n.push = n;
+                n.loaded = true;
+                n.version = '2.0';
+                n.queue = [];
+                t = b.createElement(e);
+                t.async = true;
+                t.src = v;
+                s = b.getElementsByTagName(e)[0];
+                s.parentNode.insertBefore(t, s);
+            })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+            window.fbq('init', pixelId);
+            window.fbq('track', 'PageView');
+        }
+        console.log('[Integrations] Pixel fired', pixelId);
+    }
+
+    // Captura ID: Supabase REST -> config (sem cache local)
+    async function resolvePixelId() {
         try {
-            return JSON.parse(localStorage.getItem('souza_integrations') || '{}');
+            const url = `${SUPABASE_URL}/rest/v1/site_integrations?id=eq.1&select=pixel_id`;
+            const res = await fetch(url, {
+                headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+            });
+            if (res.ok) {
+                const rows = await res.json();
+                const row = Array.isArray(rows) ? rows[0] : null;
+                const remoteId = row && row.pixel_id ? String(row.pixel_id).trim() : '';
+                if (remoteId) return remoteId;
+            } else {
+                console.warn('[Integrations] REST pixel fetch status', res.status);
+            }
+        } catch (e) { console.warn('[Integrations] REST fetch pixel failed', e); }
+
+        const cfg = getPublicIntegrationDefaults();
+        return cfg.pixel.id || '';
+    }
+
+    // Bootstrap Pixel em todas as páginas
+    (async function bootstrapPixelUniversal() {
+        const id = await resolvePixelId();
+        if (id) ensureMetaPixelLoaded(id);
+    })();
+
+    const INTEGRATIONS_REMOTE_CACHE_KEY = 'souza_integrations_remote_cache_v1';
+    const INTEGRATIONS_REMOTE_CACHE_TTL_MS = 5 * 60 * 1000;
+
+    function normalizeIntegrationConfig(raw) {
+        const cfg = raw && typeof raw === 'object' ? raw : {};
+        const pixel = cfg.pixel && typeof cfg.pixel === 'object' ? cfg.pixel : {};
+        const ga = cfg.ga && typeof cfg.ga === 'object' ? cfg.ga : {};
+        return {
+            pixel: {
+                enabled: !!pixel.enabled,
+                id: String(pixel.id || '').trim()
+            },
+            ga: {
+                enabled: !!ga.enabled,
+                id: String(ga.id || '').trim()
+            }
+        };
+    }
+
+    function mapRemoteIntegrationsRow(row) {
+        if (!row || typeof row !== 'object') return null;
+        return normalizeIntegrationConfig({
+            pixel: { enabled: !!row.pixel_enabled, id: row.pixel_id || '' },
+            ga: { enabled: !!row.ga_enabled, id: row.ga_id || '' }
+        });
+    }
+
+    function readRemoteIntegrationsCache() {
+        try {
+            const parsed = JSON.parse(sessionStorage.getItem(INTEGRATIONS_REMOTE_CACHE_KEY) || 'null');
+            if (
+                parsed &&
+                typeof parsed === 'object' &&
+                Number.isFinite(parsed.ts) &&
+                (Date.now() - parsed.ts) < INTEGRATIONS_REMOTE_CACHE_TTL_MS &&
+                parsed.data &&
+                typeof parsed.data === 'object'
+            ) {
+                return parsed.data;
+            }
+        } catch (e) { }
+        return null;
+    }
+
+    function writeRemoteIntegrationsCache(data) {
+        try {
+            sessionStorage.setItem(INTEGRATIONS_REMOTE_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+        } catch (e) { }
+    }
+
+    function clearRemoteIntegrationsCache() {
+        try { sessionStorage.removeItem(INTEGRATIONS_REMOTE_CACHE_KEY); } catch (e) { }
+    }
+
+    async function fetchSouzaIntegrationsRemote() {
+        // Usa REST direto para evitar depender de supabaseClient/SDK
+        try {
+            const url = `${SUPABASE_URL}/rest/v1/site_integrations?id=eq.1&select=pixel_enabled,pixel_id,ga_enabled,ga_id,updated_at`;
+            const res = await fetch(url, {
+                headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+            });
+            if (!res.ok) {
+                console.warn('[Integrations] REST status', res.status);
+                return null;
+            }
+            const row = await res.json();
+            return Array.isArray(row) ? row[0] : row;
         } catch (e) {
-            return {};
+            console.warn('[Integrations] fetch remote failed', e);
+            return null;
         }
     }
 
-    function saveIntegrationConfig(cfg) {
-        localStorage.setItem('souza_integrations', JSON.stringify(cfg));
+    async function saveSouzaIntegrationsRemote(cfg) {
+        const normalized = normalizeIntegrationConfig(cfg);
+        const payload = {
+            id: 1,
+            pixel_enabled: !!normalized.pixel.id,
+            pixel_id: String(normalized.pixel.id || '').trim(),
+            ga_enabled: !!normalized.ga.id,
+            ga_id: String(normalized.ga.id || '').trim(),
+            updated_at: new Date().toISOString()
+        };
+
+        const url = `${SUPABASE_URL}/rest/v1/site_integrations`;
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                apikey: SUPABASE_KEY,
+                Authorization: `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                Prefer: 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const txt = await res.text();
+            throw new Error(`supabase-upsert-failed: ${res.status} ${txt}`);
+        }
+        return normalized;
+    }
+
+    function getPublicIntegrationDefaults() {
+        const cfg = (window.SOUZA_CONFIG || {});
+        return normalizeIntegrationConfig({
+            pixel: {
+                enabled: !!(cfg.metaPixelId && cfg.metaPixelId.trim()),
+                id: (cfg.metaPixelId || '').trim()
+            },
+            ga: {
+                enabled: !!(cfg.gaMeasurementId && cfg.gaMeasurementId.trim()),
+                id: (cfg.gaMeasurementId || '').trim()
+            }
+        });
+    }
+
+    async function getEffectiveIntegrationConfig() {
+        const defaults = getPublicIntegrationDefaults();
+        const remoteRaw = await fetchSouzaIntegrationsRemote();
+        const remoteCfg = normalizeIntegrationConfig(remoteRaw);
+
+        // Escolhe o ID priorizando Supabase -> Config (sem cache local)
+        const pickPixel = remoteCfg.pixel.id ? remoteCfg.pixel : defaults.pixel;
+        const pickGa = remoteCfg.ga.id ? remoteCfg.ga : defaults.ga;
+
+        return {
+            pixel: {
+                // Se existir ID em qualquer fonte, habilita
+                enabled: !!pickPixel.id,
+                id: pickPixel.id
+            },
+            ga: {
+                enabled: !!pickGa.id,
+                id: pickGa.id
+            }
+        };
+    }
+
+    function loadMetaPixel(pixelId) {
+        const id = (pixelId || '').trim();
+        if (!id) return;
+
+        window.__souzaPixelLoaded = window.__souzaPixelLoaded || {};
+        if (window.__souzaPixelLoaded[id]) return;
+        window.__souzaPixelLoaded[id] = true;
+
+        if (window.fbq) {
+            window.fbq('init', id);
+            window.fbq('track', 'PageView');
+            return;
+        }
+
+        (function (f, b, e, v, n, t, s) {
+            if (f.fbq) return;
+            n = f.fbq = function () {
+                n.callMethod ?
+                    n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+            };
+            if (!f._fbq) f._fbq = n;
+            n.push = n;
+            n.loaded = true;
+            n.version = '2.0';
+            n.queue = [];
+            t = b.createElement(e);
+            t.async = true;
+            t.src = v;
+            s = b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t, s);
+        })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+
+        window.fbq('init', id);
+        window.fbq('track', 'PageView');
+    }
+
+    function loadGoogleAnalytics(measurementId) {
+        const id = (measurementId || '').trim();
+        if (!id) return;
+
+        window.__souzaGaLoaded = window.__souzaGaLoaded || {};
+        if (window.__souzaGaLoaded[id]) {
+            window.gtag && window.gtag('config', id);
+            return;
+        }
+        window.__souzaGaLoaded[id] = true;
+
+        const gaScript = document.createElement('script');
+        gaScript.async = true;
+        gaScript.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
+        document.head.appendChild(gaScript);
+
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { window.dataLayer.push(arguments); }
+        window.gtag = gtag;
+        gtag('js', new Date());
+        gtag('config', id);
+    }
+
+    async function initAnalyticsIntegrations() {
+        try {
+            const cfg = await getEffectiveIntegrationConfig();
+            console.log('[Integrations] Effective config', cfg);
+            if (cfg.pixel.enabled && cfg.pixel.id) {
+                loadMetaPixel(cfg.pixel.id);
+                console.log('[Integrations] Meta Pixel loaded', cfg.pixel.id);
+            }
+            if (cfg.ga.enabled && cfg.ga.id) {
+                loadGoogleAnalytics(cfg.ga.id);
+                console.log('[Integrations] GA loaded', cfg.ga.id);
+            }
+        } catch (err) {
+            console.error('Analytics init failed:', err);
+        }
+    }
+
+    // Dispara imediatamente se houver ID salvo localmente (admin), antes mesmo do Supabase.
+    async function forcePixelBootstrapFromLocal() {
+        try {
+            const cfg = normalizeIntegrationConfig(getIntegrationConfig());
+            if (cfg.pixel.enabled && cfg.pixel.id) {
+                loadMetaPixel(cfg.pixel.id);
+                console.log('[Integrations] Pixel forced from localStorage', cfg.pixel.id);
+            }
+        } catch (e) {
+            console.warn('[Integrations] forcePixelBootstrap error', e);
+        }
     }
 
     function setToggleState(toggleEl, isActive) {
@@ -2849,48 +3525,68 @@ function initAdmin() {
         }
 
         if (savePixelBtn) {
-            savePixelBtn.addEventListener('click', () => {
-                const current = getIntegrationConfig();
-                current.pixel = {
-                    enabled: pixelToggle ? pixelToggle.classList.contains('active') : false,
-                    id: (pixelIdInput?.value || '').trim()
-                };
-                saveIntegrationConfig(current);
-                showToast('Facebook Pixel atualizado.');
+            savePixelBtn.addEventListener('click', async () => {
+                const typedId = (pixelIdInput?.value || '').trim();
+                setLocalPixelId(typedId);
+                ensureMetaPixelLoaded(typedId);
+                try {
+                    await saveSouzaIntegrationsRemote({ pixel: { id: typedId } });
+                    showToast('Facebook Pixel atualizado (site online).');
+                } catch (e) {
+                    showToast('Pixel salvo apenas localmente (erro ao salvar no Supabase).', 6000);
+                }
             });
         }
 
         if (removePixelBtn) {
-            removePixelBtn.addEventListener('click', () => {
-                const current = getIntegrationConfig();
-                current.pixel = { enabled: false, id: '' };
-                saveIntegrationConfig(current);
+            removePixelBtn.addEventListener('click', async () => {
+                setLocalPixelId('');
                 if (pixelIdInput) pixelIdInput.value = '';
                 setToggleState(pixelToggle, false);
-                showToast('Facebook Pixel removido.');
+                window.__souzaPixelLoaded = {};
+                try {
+                    await saveSouzaIntegrationsRemote({ pixel: { id: '' } });
+                    showToast('Facebook Pixel removido (site online).');
+                } catch (e) {
+                    showToast('Pixel removido apenas localmente (erro Supabase).', 6000);
+                }
             });
         }
 
         if (saveGaBtn) {
-            saveGaBtn.addEventListener('click', () => {
+            saveGaBtn.addEventListener('click', async () => {
                 const current = getIntegrationConfig();
+                const typedId = (gaIdInput?.value || '').trim();
+                if (typedId && gaToggle && !gaToggle.classList.contains('active')) {
+                    gaToggle.classList.add('active');
+                }
                 current.ga = {
                     enabled: gaToggle ? gaToggle.classList.contains('active') : false,
-                    id: (gaIdInput?.value || '').trim()
+                    id: typedId
                 };
                 saveIntegrationConfig(current);
-                showToast('Google Analytics atualizado.');
+                try {
+                    await saveSouzaIntegrationsRemote(current);
+                    showToast('Google Analytics atualizado (site online).');
+                } catch (e) {
+                    showToast('Analytics atualizado apenas neste navegador (configure o Supabase).', 6000);
+                }
             });
         }
 
         if (removeGaBtn) {
-            removeGaBtn.addEventListener('click', () => {
+            removeGaBtn.addEventListener('click', async () => {
                 const current = getIntegrationConfig();
                 current.ga = { enabled: false, id: '' };
                 saveIntegrationConfig(current);
                 if (gaIdInput) gaIdInput.value = '';
                 setToggleState(gaToggle, false);
-                showToast('Google Analytics removido.');
+                try {
+                    await saveSouzaIntegrationsRemote(current);
+                    showToast('Google Analytics removido (site online).');
+                } catch (e) {
+                    showToast('Analytics removido apenas neste navegador (configure o Supabase).', 6000);
+                }
             });
         }
     }
@@ -3663,6 +4359,7 @@ async function initDetails() {
         if (videoFrame) videoFrame.src = mediaVideoUrl;
         if (videoWrap) videoWrap.hidden = false;
         if (mosaicWrap) {
+            mosaicWrap.classList.remove('is-carousel');
             mosaicWrap.hidden = true;
             mosaicWrap.innerHTML = '';
         }
@@ -3670,36 +4367,87 @@ async function initDetails() {
         if (mediaNote) mediaNote.hidden = true;
     } else {
         const mosaicImages = (rawImages && rawImages.length ? rawImages : ['logo.png']).filter(Boolean);
-        const maxTiles = 8;
-        const visibleImages = mosaicImages.slice(0, maxTiles);
-        const overflow = Math.max(0, mosaicImages.length - maxTiles);
-
         if (videoFrame) videoFrame.src = '';
         if (videoWrap) videoWrap.hidden = true;
+
         if (mosaicWrap) {
-            const baseTiles = visibleImages.map((src, index) => `
-                <button type="button" class="vehicle-mosaic-tile" data-mosaic-index="${index}">
-                    <img src="${src}" alt="Foto ${index + 1} do veículo" loading="lazy" decoding="async" onerror="this.onerror=null; this.src='logo.png';">
-                </button>
-            `);
-            if (overflow > 0 && baseTiles.length > 0) {
-                const lastIndex = baseTiles.length - 1;
-                baseTiles[lastIndex] = `
-                    <button type="button" class="vehicle-mosaic-tile vehicle-mosaic-overflow" data-mosaic-index="${lastIndex}">
-                        <img src="${visibleImages[lastIndex]}" alt="Mais fotos do veículo" loading="lazy" decoding="async" onerror="this.onerror=null; this.src='logo.png';">
-                        <span>+${overflow}</span>
-                    </button>
-                `;
-            }
-            mosaicWrap.innerHTML = baseTiles.join('');
+            // Carrossel em "slides" (2 por vez) conforme backup
             mosaicWrap.hidden = false;
-            mosaicWrap.querySelectorAll('[data-mosaic-index]').forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    const idx = Number(btn.getAttribute('data-mosaic-index') || '0');
-                    window.openGallery(idx);
+            mosaicWrap.classList.add('is-carousel');
+
+            const pairs = [];
+            for (let i = 0; i < mosaicImages.length; i += 2) {
+                pairs.push(mosaicImages.slice(i, i + 2));
+            }
+
+            const slidesHTML = pairs.map((pair, pairIndex) => {
+                const isSingle = pair.length === 1;
+                const itemsHTML = pair.map((src, withinPairIndex) => {
+                    const imageIndex = pairIndex * 2 + withinPairIndex;
+                    return `
+                        <button type="button" class="mosaic-carousel-item" data-carousel-index="${imageIndex}" aria-label="Abrir foto ${imageIndex + 1}">
+                            <img src="${src}" alt="Foto ${imageIndex + 1} do veículo" loading="lazy" decoding="async" onerror="this.onerror=null; this.src='logo.png';">
+                        </button>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="mosaic-slide${isSingle ? ' single' : ''}" data-slide-index="${pairIndex}">
+                        ${itemsHTML}
+                    </div>
+                `;
+            }).join('');
+
+            const carouselHTML = `
+                <div class="mosaic-carousel-shell">
+                    <button type="button" class="mosaic-nav prev" aria-label="Fotos anteriores">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 18l-6-6 6-6"></path>
+                        </svg>
+                    </button>
+                    <div class="mosaic-carousel-container" id="detailsMosaicCarousel" aria-label="Galeria de fotos">
+                        ${slidesHTML}
+                    </div>
+                    <button type="button" class="mosaic-nav next" aria-label="Próximas fotos">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18l6-6-6-6"></path>
+                        </svg>
+                    </button>
+                </div>
+            `;
+
+            mosaicWrap.innerHTML = carouselHTML;
+
+            const container = mosaicWrap.querySelector('#detailsMosaicCarousel');
+            const prevBtn = mosaicWrap.querySelector('.mosaic-nav.prev');
+            const nextBtn = mosaicWrap.querySelector('.mosaic-nav.next');
+
+            mosaicWrap.querySelectorAll('.mosaic-carousel-item').forEach((item) => {
+                item.addEventListener('click', () => {
+                    const idx = Number(item.getAttribute('data-carousel-index') || '0');
+                    if (typeof window.openGallery === 'function') {
+                        window.openGallery(idx);
+                    }
                 });
             });
+
+            // Navegação: 1 slide = 2 imagens
+            const scrollBySlide = (direction) => {
+                if (!container) return;
+                const dx = (container.clientWidth || 0) * direction;
+                container.scrollBy({ left: dx, behavior: 'smooth' });
+            };
+            if (prevBtn) prevBtn.addEventListener('click', () => scrollBySlide(-1));
+            if (nextBtn) nextBtn.addEventListener('click', () => scrollBySlide(1));
+
+            // Esconde setas se só houver um slide
+            const slideCount = mosaicWrap.querySelectorAll('.mosaic-slide').length;
+            if (slideCount <= 1) {
+                if (prevBtn) prevBtn.hidden = true;
+                if (nextBtn) nextBtn.hidden = true;
+            }
         }
+
         if (mediaTitle) mediaTitle.textContent = 'Galeria de Fotos';
         if (mediaNote) {
             mediaNote.textContent = 'Sem vídeo cadastrado para este veículo.';
@@ -3943,6 +4691,11 @@ function updateWhatsAppLinks() {
 // ===== Main Init =====
 // ===== Loader Logic =====
 
+// Failsafe: evite quebra se integrações não estiverem carregadas
+if (typeof initAnalyticsIntegrations !== 'function') {
+    function initAnalyticsIntegrations() { /* no-op */ }
+}
+
 
 // ===== Main Init =====
 document.addEventListener('DOMContentLoaded', async () => {
@@ -3950,6 +4703,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         sanitizeMojibakeTextNodes();
         enforceOfficialAddressInStorage();
         enforceOfficialPhoneInStorage();
+        await initAnalyticsIntegrations();
         console.log("Inicializando aplicação...");
         recordSiteAccess();
 
